@@ -62,7 +62,7 @@ const nav = [
 ];
 
 export function Sidebar() {
-  const { sidebarCollapsed } = useUIStore();
+  const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
   const { boards } = useKanbanStore();
   const { data: session } = useSession();
   const pathname = usePathname();
@@ -71,6 +71,14 @@ export function Sidebar() {
   const permissions = session?.user?.permissions ?? [];
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Auto-close sidebar on navigation (mobile)
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setSidebarCollapsed(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const recentBoards = boards.slice(0, 6);
 

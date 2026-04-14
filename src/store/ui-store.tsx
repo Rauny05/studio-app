@@ -19,6 +19,13 @@ export function UIStoreProvider({ children }: { children: React.ReactNode }) {
   const [darkMode, setDarkMode] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
+  // On mobile, start with sidebar collapsed so it doesn't overlay on first paint
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setSidebarCollapsed(true);
+    }
+  }, []);
+
   // Persist dark mode
   useEffect(() => {
     const saved = localStorage.getItem("studio-dark-mode");
