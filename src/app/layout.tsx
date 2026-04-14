@@ -1,9 +1,10 @@
 import { Metadata, Viewport } from "next";
 import "../../styles/global.css";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Remotion and Next.js",
-  description: "Remotion and Next.js",
+  title: "Studio",
+  description: "Creative studio workspace",
 };
 
 export const viewport: Viewport = {
@@ -19,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-background">{children}</body>
+      <body><Providers>{children}</Providers></body>
     </html>
   );
 }
