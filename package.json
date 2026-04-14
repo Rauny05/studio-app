@@ -19,6 +19,7 @@
     "@remotion/player": "4.0.441",
     "@remotion/shapes": "4.0.441",
     "@remotion/tailwind-v4": "4.0.441",
+    "@upstash/redis": "^1.37.0",
     "chokidar": "^5.0.0",
     "clsx": "2.1.1",
     "gray-matter": "^4.0.3",

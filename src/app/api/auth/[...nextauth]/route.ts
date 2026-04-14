@@ -1,29 +1,11 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
+import { loadUsers } from "@/lib/users-store";
 
-export interface AllowedUser {
-  email: string;
-  name?: string;
-  role: "admin" | "member";
-  permissions: string[]; // "dashboard" | "projects" | "deliverables" | "calendar" | "settings"
-  addedAt: string;
-}
+export type { AllowedUser } from "@/lib/users-store";
 
 export const ADMIN_EMAIL = "raunaq@rmmedia.in";
 export const ALL_PERMISSIONS = ["dashboard", "projects", "deliverables", "calendar", "settings"];
-
-function loadUsers(): AllowedUser[] {
-  const path = join(process.cwd(), "data", "allowed-users.json");
-  if (!existsSync(path)) return [];
-  try {
-    const raw = readFileSync(path, "utf-8");
-    return JSON.parse(raw) as AllowedUser[];
-  } catch {
-    return [];
-  }
-}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -36,11 +18,10 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user }) {
       if (!user.email) return false;
       if (user.email === ADMIN_EMAIL) return true;
-      const users = loadUsers();
+      const users = await loadUsers();
       return users.some((u) => u.email === user.email);
     },
     async jwt({ token, user }) {
-      // Runs on sign-in and on every request
       const email = token.email ?? user?.email;
       if (!email) return token;
 
@@ -48,7 +29,7 @@ export const authOptions: NextAuthOptions = {
         token.role = "admin";
         token.permissions = [...ALL_PERMISSIONS, "admin"];
       } else {
-        const users = loadUsers();
+        const users = await loadUsers();
         const found = users.find((u) => u.email === email);
         token.role = found?.role ?? "member";
         token.permissions = found?.permissions ?? [];
