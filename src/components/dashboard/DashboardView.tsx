@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useKanbanStore } from "@/store/kanban-store";
 import { DELIVERABLE_CONFIG, PRIORITY_CONFIG } from "@/components/kanban/tag-colors";
 import type { Card } from "@/types/kanban";
 import type { DeliverableRow } from "@/app/api/deliverables/route";
+import { useReelsStore } from "@/lib/reels-store";
 
 // ── Simple SVG bar chart ─────────────────────────────────────────────────────
 
@@ -261,6 +262,84 @@ function DeliverablesSummary() {
   );
 }
 
+// ── Today's Reels widget ─────────────────────────────────────────────────────
+
+function TodayReels() {
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const { getReels, addReel, removeReel } = useReelsStore();
+  const reels = getReels(todayStr);
+  const [inputVal, setInputVal] = useState("");
+  const [showInput, setShowInput] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = inputVal.trim();
+    if (!trimmed) return;
+    addReel(todayStr, trimmed);
+    setInputVal("");
+    inputRef.current?.focus();
+  }
+
+  const todayLabel = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+  return (
+    <div className="today-reels-widget">
+      <div className="today-reels-header">
+        <div className="today-reels-title-row">
+          <span className="today-reels-icon">🎬</span>
+          <div>
+            <h2 className="today-reels-title">Today&apos;s Reels</h2>
+            <p className="today-reels-date">{todayLabel}</p>
+          </div>
+        </div>
+        <button
+          className="today-reels-add-btn"
+          onClick={() => { setShowInput(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add reel
+        </button>
+      </div>
+
+      <div className="today-reels-body">
+        {reels.length === 0 && !showInput && (
+          <p className="today-reels-empty">No reels scheduled — tap &quot;Add reel&quot; to plan your day.</p>
+        )}
+        <div className="today-reels-chips">
+          {reels.map((r, idx) => (
+            <span key={r.id} className="today-reel-chip">
+              <span className="today-reel-num">{idx + 1}</span>
+              <span className="today-reel-name">{r.name}</span>
+              <button
+                className="today-reel-remove"
+                onClick={() => removeReel(todayStr, r.id)}
+                aria-label="Remove"
+              >×</button>
+            </span>
+          ))}
+        </div>
+        {showInput && (
+          <form onSubmit={handleAdd} className="today-reels-form">
+            <input
+              ref={inputRef}
+              className="today-reels-input"
+              value={inputVal}
+              onChange={(e) => setInputVal(e.target.value)}
+              placeholder="Reel name or topic…"
+              onBlur={() => { if (!inputVal.trim()) setShowInput(false); }}
+            />
+            <button type="submit" className="today-reels-submit">Add</button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main dashboard ───────────────────────────────────────────────────────────
 
 export function DashboardView() {
@@ -348,6 +427,9 @@ export function DashboardView() {
 
   return (
     <div className="dashboard-page">
+      {/* Today's Reels — priority top section */}
+      <TodayReels />
+
       <div className="dashboard-header">
         <h2 className="dashboard-heading">Dashboard</h2>
         <p className="dashboard-subheading">

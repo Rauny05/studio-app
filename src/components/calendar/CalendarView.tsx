@@ -1,9 +1,70 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useKanbanStore } from "@/store/kanban-store";
 import { DELIVERABLE_CONFIG } from "@/components/kanban/tag-colors";
 import { CardModal } from "@/components/kanban/CardModal";
+import { useReelsStore } from "@/lib/reels-store";
+
+// ── Reel input for a single day ──────────────────────────────────────────────
+
+function DayReels({ dateStr }: { dateStr: string }) {
+  const { getReels, addReel, removeReel } = useReelsStore();
+  const reels = getReels(dateStr);
+  const [inputVal, setInputVal] = useState("");
+  const [showInput, setShowInput] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = inputVal.trim();
+    if (!trimmed) return;
+    addReel(dateStr, trimmed);
+    setInputVal("");
+    setShowInput(false);
+  }
+
+  return (
+    <div className="cal-reels">
+      {reels.map((r) => (
+        <span key={r.id} className="cal-reel-chip">
+          <span className="cal-reel-icon">🎬</span>
+          <span className="cal-reel-name">{r.name}</span>
+          <button
+            className="cal-reel-remove"
+            onClick={(e) => { e.stopPropagation(); removeReel(dateStr, r.id); }}
+            aria-label="Remove reel"
+          >×</button>
+        </span>
+      ))}
+      {showInput ? (
+        <form onSubmit={handleAdd} className="cal-reel-form">
+          <input
+            ref={inputRef}
+            className="cal-reel-input"
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            placeholder="Reel name…"
+            autoFocus
+            onBlur={() => { if (!inputVal.trim()) setShowInput(false); }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </form>
+      ) : (
+        <button
+          className="cal-reel-add-btn"
+          onClick={(e) => { e.stopPropagation(); setShowInput(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+          aria-label="Add reel for this day"
+          title="Add reel"
+        >
+          + reel
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Main CalendarView ────────────────────────────────────────────────────────
 
 export function CalendarView() {
   const { cards, boards, openCard, selectedCardId, closeCard } = useKanbanStore();
@@ -113,6 +174,7 @@ export function CalendarView() {
                   <span className="calendar-more-badge">+{cell.cards.length - 3} more</span>
                 )}
               </div>
+              <DayReels dateStr={dateStr} />
             </div>
           );
         })}
