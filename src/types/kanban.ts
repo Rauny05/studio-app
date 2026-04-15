@@ -55,6 +55,7 @@ export type Board = {
   description: string;
   color: string; // hex accent
   emoji: string;
+  thumbnailUrl?: string; // base64 or image URL
   columnIds: string[];
   createdAt: string;
   updatedAt: string;

@@ -1,10 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Board } from "@/types/kanban";
 import { BOARD_COLORS } from "@/types/kanban";
 import { useKanbanStore } from "@/store/kanban-store";
+
+// Convert file to base64
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 const BOARD_EMOJIS = ["🎬", "📸", "🎙️", "✍️", "📢", "🚀", "🎯", "💡", "🌟", "📱", "🎨", "📹"];
 
@@ -20,7 +30,11 @@ function BoardCard({ board, onOpen }: { board: Board; onOpen: () => void }) {
     <div className="board-card" style={{ "--board-color": board.color } as React.CSSProperties}>
       <div className="board-card-color-bar" style={{ background: board.color }} />
       <div className="board-card-body" onClick={onOpen}>
-        <div className="board-card-emoji">{board.emoji}</div>
+        {board.thumbnailUrl ? (
+          <img src={board.thumbnailUrl} alt="" className="board-card-thumbnail" />
+        ) : (
+          <div className="board-card-emoji">{board.emoji}</div>
+        )}
         <h3 className="board-card-title">{board.title}</h3>
         {board.description && (
           <p className="board-card-desc">{board.description}</p>
@@ -96,10 +110,24 @@ function NewBoardModal({ onClose }: { onClose: () => void }) {
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(BOARD_COLORS[0].value);
   const [emoji, setEmoji] = useState(BOARD_EMOJIS[0]);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.currentTarget.files?.[0];
+    if (!file) return;
+    // Only allow images
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+    const base64 = await fileToBase64(file);
+    setThumbnailUrl(base64);
+  }
 
   function create() {
     if (!title.trim()) return;
-    const id = addBoard({ title: title.trim(), description, color, emoji });
+    const id = addBoard({ title: title.trim(), description, color, emoji, thumbnailUrl: thumbnailUrl || undefined });
     router.push(`/projects/${id}`);
     onClose();
   }
@@ -119,10 +147,47 @@ function NewBoardModal({ onClose }: { onClose: () => void }) {
         <div className="modal-body" style={{ gap: 12 }}>
           {/* Preview */}
           <div className="new-board-preview" style={{ background: color + "18", borderColor: color + "44" }}>
-            <div className="new-board-preview-emoji">{emoji}</div>
+            {thumbnailUrl ? (
+              <img src={thumbnailUrl} alt="" className="new-board-preview-thumbnail" />
+            ) : (
+              <div className="new-board-preview-emoji">{emoji}</div>
+            )}
             <div className="new-board-preview-title" style={{ color }}>
               {title || "Project name"}
             </div>
+          </div>
+
+          {/* Thumbnail upload */}
+          <div>
+            <label className="modal-label">Thumbnail <span style={{ color: "var(--app-text-muted)", fontWeight: 400 }}>(optional)</span></label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              style={{ display: "none" }}
+            />
+            <button
+              className="modal-upload-btn"
+              onClick={() => fileInputRef.current?.click()}
+              title="Upload thumbnail image"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              {thumbnailUrl ? "Change thumbnail" : "Upload thumbnail"}
+            </button>
+            {thumbnailUrl && (
+              <button
+                className="modal-remove-btn"
+                onClick={() => setThumbnailUrl(null)}
+                title="Remove thumbnail"
+              >
+                Remove
+              </button>
+            )}
           </div>
 
           {/* Emoji picker */}

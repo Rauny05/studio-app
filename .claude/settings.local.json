@@ -3,7 +3,17 @@
     "allow": [
       "Read(//Users/raunaqrm/Downloads/remotion/**)",
       "Bash(npm init:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(mkdir -p ~/thumbnail-maker)",
+      "Read(//Users/raunaqrm/**)",
+      "Bash(chmod +x ~/thumbnail-maker/start.sh)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(claude plugin:*)",
+      "Read(//usr/local/bin/**)",
+      "Bash(command -v claude)",
+      "WebSearch",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('name',''\\), d.get\\('description',''\\)\\)\")"
     ]
   }
 }

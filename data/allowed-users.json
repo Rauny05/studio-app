@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "email": "raunysingh05@gmail.com",
+    "role": "member",
+    "permissions": [
+      "calendar",
+      "dashboard",
+      "projects",
+      "deliverables",
+      "settings"
+    ],
+    "addedAt": "2026-04-14T08:27:27.018Z"
+  }
+]

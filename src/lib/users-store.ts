@@ -53,11 +53,18 @@ function fileGet(): AllowedUser[] {
 function fileSet(users: AllowedUser[]): void {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { writeFileSync } = require("fs");
+    const { writeFileSync, mkdirSync, existsSync } = require("fs");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { join } = require("path");
-    writeFileSync(join(process.cwd(), "data", "allowed-users.json"), JSON.stringify(users, null, 2));
-  } catch { /* ignore */ }
+    const dataDir = join(process.cwd(), "data");
+    // Create data directory if it doesn't exist
+    if (!existsSync(dataDir)) {
+      mkdirSync(dataDir, { recursive: true });
+    }
+    writeFileSync(join(dataDir, "allowed-users.json"), JSON.stringify(users, null, 2));
+  } catch (err) {
+    console.error("Failed to save users:", err);
+  }
 }
 
 export async function loadUsers(): Promise<AllowedUser[]> {
