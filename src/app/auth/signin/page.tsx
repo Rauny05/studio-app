@@ -2,17 +2,30 @@
 
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 
 function SignInContent() {
   const params = useSearchParams();
   const error = params.get("error");
 
+  // Detect Capacitor / Android WebView — skip Google OAuth entirely
+  const [isNativeApp, setIsNativeApp] = useState(false);
   const [mode, setMode] = useState<"google" | "passcode">("google");
   const [email, setEmail] = useState("");
   const [passcode, setPasscode] = useState("");
   const [loading, setLoading] = useState(false);
   const [passcodeError, setPasscodeError] = useState("");
+
+  useEffect(() => {
+    // window.Capacitor is injected by Capacitor runtime in the WebView
+    const native =
+      typeof window !== "undefined" &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ((window as any).Capacitor !== undefined ||
+        /wv|WebView/.test(navigator.userAgent));
+    setIsNativeApp(native);
+    if (native) setMode("passcode");
+  }, []);
 
   async function handlePasscodeSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,23 +64,13 @@ function SignInContent() {
           </div>
         )}
 
-        {/* Tab switcher */}
-        <div className="auth-tabs">
-          <button
-            className={`auth-tab ${mode === "google" ? "active" : ""}`}
-            onClick={() => setMode("google")}
-            type="button"
-          >
-            Google
-          </button>
-          <button
-            className={`auth-tab ${mode === "passcode" ? "active" : ""}`}
-            onClick={() => setMode("passcode")}
-            type="button"
-          >
-            Access Code
-          </button>
-        </div>
+        {/* Only show tabs on web — native app goes straight to passcode */}
+        {!isNativeApp && (
+          <div className="auth-tabs">
+            <button className={`auth-tab ${mode === "google" ? "active" : ""}`} onClick={() => setMode("google")} type="button">Google</button>
+            <button className={`auth-tab ${mode === "passcode" ? "active" : ""}`} onClick={() => setMode("passcode")} type="button">Access Code</button>
+          </div>
+        )}
 
         {mode === "google" ? (
           <button
@@ -103,17 +106,13 @@ function SignInContent() {
               autoComplete="current-password"
             />
             {passcodeError && <div className="auth-error">{passcodeError}</div>}
-            <button
-              type="submit"
-              className="auth-passcode-btn"
-              disabled={loading}
-            >
+            <button type="submit" className="auth-passcode-btn" disabled={loading}>
               {loading ? "Signing in…" : "Sign In"}
             </button>
           </form>
         )}
 
-        <p className="auth-footer">Access is invite-only. Request access from your admin.</p>
+        <p className="auth-footer">Access is invite-only.</p>
       </div>
     </div>
   );
