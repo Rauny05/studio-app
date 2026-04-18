@@ -27,15 +27,13 @@ export const authOptions: NextAuthOptions = {
         const email = credentials.email.toLowerCase().trim();
         const expectedCode = process.env.APP_ACCESS_CODE;
 
-        // Must have a passcode set in env
+        // Admin must use Google OAuth — never the shared passcode
+        if (email === ADMIN_EMAIL) return null;
+
         if (!expectedCode) return null;
         if (credentials.passcode.trim() !== expectedCode.trim()) return null;
 
-        // Email must be admin or in allowed list
-        if (email === ADMIN_EMAIL) {
-          return { id: email, email, name: "Raunaq", image: null };
-        }
-
+        // Email must be in the allowed users list
         const users = await loadUsers();
         const found = users.find((u) => u.email === email);
         if (!found) return null;

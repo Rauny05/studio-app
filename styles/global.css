@@ -4367,6 +4367,20 @@ html[data-theme="dark"] .dl-chip[data-done="false"] { color: #fbbf24; background
 .auth-passcode-btn:hover { opacity: 0.88; }
 .auth-passcode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.auth-admin-google {
+  background: none;
+  border: none;
+  color: var(--app-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: center;
+  width: 100%;
+  opacity: 0.5;
+  transition: opacity 150ms;
+}
+.auth-admin-google:hover { opacity: 1; }
+
 /* ═══════════════════════════════════════════════
    BOTTOM NAV (mobile)
    ═══════════════════════════════════════════════ */
