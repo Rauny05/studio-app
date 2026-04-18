@@ -3015,6 +3015,7 @@ html[data-theme="light"] {
     left: 12px;
     width: auto;
     bottom: 80px;
+
   }
 
   /* ── Avatar dropdown ─────────────────── */
@@ -4417,6 +4418,16 @@ html[data-theme="dark"] .dl-chip[data-done="false"] { color: #fbbf24; background
 /* Ensure content doesn't hide behind bottom nav on mobile */
 [data-native="true"] .app-content {
   padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Lift FAB above bottom nav in native app */
+[data-native="true"] .quick-add-fab {
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 16px);
+  right: 20px;
+}
+
+[data-native="true"] .quick-add-popover {
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 72px);
 }
 
 /* On mobile: no sidebar, full-width main */

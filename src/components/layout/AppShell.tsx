@@ -10,6 +10,7 @@ import { QuickAdd } from "@/components/quick-add/QuickAdd";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { useVaultSync } from "@/hooks/useVaultSync";
 import { CloudSync } from "@/components/sync/CloudSync";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // Detect Capacitor ONCE at module level — never changes, no re-renders
 function detectNativeApp(): boolean {
@@ -23,6 +24,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   // Only true inside the Capacitor Android app — never on web browser
   const [isNativeApp, setIsNativeApp] = useState(false);
   useVaultSync();
+  usePushNotifications();
 
   useEffect(() => {
     useKanbanStore.persist.rehydrate();
