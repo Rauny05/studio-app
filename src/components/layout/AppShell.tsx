@@ -12,7 +12,7 @@ import { useVaultSync } from "@/hooks/useVaultSync";
 import { CloudSync } from "@/components/sync/CloudSync";
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
+  const { sidebarCollapsed } = useUIStore();
   const [isMobile, setIsMobile] = useState(false);
   useVaultSync();
 
