@@ -22,7 +22,7 @@ async function getAccessToken(serviceAccount: {
   };
 
   const encode = (obj: object) =>
-    Buffer.from(JSON.stringify(obj)).toString("base64url");
+    btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
   const signingInput = `${encode(header)}.${encode(payload)}`;
 
@@ -32,7 +32,7 @@ async function getAccessToken(serviceAccount: {
     .replace(/-----END PRIVATE KEY-----/, "")
     .replace(/\n/g, "");
 
-  const binaryKey = Buffer.from(keyData, "base64");
+  const binaryKey = Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0));
   const cryptoKey = await crypto.subtle.importKey(
     "pkcs8",
     binaryKey,
@@ -41,13 +41,14 @@ async function getAccessToken(serviceAccount: {
     ["sign"]
   );
 
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    Buffer.from(signingInput)
-  );
+  const signingBytes = new TextEncoder().encode(signingInput);
+  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, signingBytes);
 
-  const jwt = `${signingInput}.${Buffer.from(signature).toString("base64url")}`;
+  const b64url = (buf: ArrayBuffer) =>
+    btoa(String.fromCharCode(...new Uint8Array(buf)))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+  const jwt = `${signingInput}.${b64url(signature)}`;
 
   // Exchange JWT for access token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
