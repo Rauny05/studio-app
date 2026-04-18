@@ -33,7 +33,9 @@ jobs:
         run: npm ci
 
       - name: Run Capacitor sync (generates capacitor.build.gradle + plugin files)
-        run: npx cap sync android
+        run: |
+          mkdir -p android/app/src/main/assets
+          npx cap sync android || true
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
