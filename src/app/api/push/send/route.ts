@@ -44,9 +44,12 @@ async function getAccessToken(serviceAccount: {
   const signingBytes = new TextEncoder().encode(signingInput).buffer as ArrayBuffer;
   const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, signingBytes);
 
-  const b64url = (buf: ArrayBuffer) =>
-    btoa(String.fromCharCode(...new Uint8Array(buf)))
-      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const b64url = (buf: ArrayBuffer) => {
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  };
 
   const jwt = `${signingInput}.${b64url(signature)}`;
 
