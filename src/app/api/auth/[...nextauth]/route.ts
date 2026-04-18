@@ -29,7 +29,7 @@ export const authOptions: NextAuthOptions = {
 
         // Must have a passcode set in env
         if (!expectedCode) return null;
-        if (credentials.passcode !== expectedCode) return null;
+        if (credentials.passcode.trim() !== expectedCode.trim()) return null;
 
         // Email must be admin or in allowed list
         if (email === ADMIN_EMAIL) {

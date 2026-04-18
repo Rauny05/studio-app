@@ -41,7 +41,9 @@ function SignInContent() {
     if (result?.error) {
       setPasscodeError("Invalid email or access code.");
     } else if (result?.url) {
-      window.location.href = result.url;
+      // Use replace() so the login page is removed from history
+      // — prevents Android back button from returning to sign-in
+      window.location.replace(result.url);
     }
   }
 
