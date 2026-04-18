@@ -79,11 +79,13 @@ const MONTH_MAP: Record<string, string> = {
 };
 
 function parseMonth(pnNo: string): string {
-  const match = pnNo.match(/^([a-z]{2})(\d{2})-/i);
+  // Handles: ap25-1, apr25-1, ap2025-1, APR25-001, etc.
+  const match = pnNo.match(/^([a-z]{2,4})(\d{2,4})-/i);
   if (!match) return "";
-  const prefix = match[1].toLowerCase();
-  const year = `20${match[2]}`;
-  return `${MONTH_MAP[prefix] ?? prefix} ${year}`;
+  const prefix = match[1].slice(0, 2).toLowerCase();
+  const yearRaw = match[2];
+  const year = yearRaw.length === 2 ? `20${yearRaw}` : yearRaw;
+  return `${MONTH_MAP[prefix] ?? match[1]} ${year}`;
 }
 
 function parseDeliverables(raw: string): DeliverableItem[] {
@@ -120,24 +122,35 @@ function computeOverallStatus(
 export async function GET() {
   try {
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+
     const res = await fetch(url, { cache: "no-store" });
 
     if (!res.ok) {
-      return NextResponse.json({ error: "Failed to fetch sheet" }, { status: 502 });
+      return NextResponse.json({ error: `Failed to fetch sheet (HTTP ${res.status})` }, { status: 502 });
     }
 
     const text = await res.text();
+
+    // If Google redirected to a login page, the body will be HTML not CSV
+    if (text.trimStart().startsWith("<!DOCTYPE") || text.trimStart().startsWith("<html")) {
+      return NextResponse.json(
+        { error: "sheet_private", message: "The Google Sheet is private. Share it as 'Anyone with the link → Viewer'." },
+        { status: 403 }
+      );
+    }
     const rows = parseCSV(text);
     const dataRows: DeliverableRow[] = [];
 
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (!row || row.length < 3) continue;
+      if (!row || row.length < 2) continue;
 
       const pnNo = (row[0] ?? "").trim();
-      if (!pnNo || !/^[a-z]{2}\d{2}-\d+/i.test(pnNo)) continue;
-
       const brand = (row[1] ?? "").trim();
+
+      // Skip rows with no usable data
+      if (!pnNo && !brand) continue;
+      // Skip clearly empty / header-like rows
       if (!brand) continue;
 
       const delRaw = (row[2] ?? "").trim();
@@ -153,7 +166,7 @@ export async function GET() {
       const paymentStep = (payment100 ? 3 : advance50 ? 2 : emailSent ? 1 : 0) as 0 | 1 | 2 | 3;
 
       dataRows.push({
-        id: pnNo,
+        id: pnNo || `row-${i}`,
         pnNo,
         brand,
         deliverables,

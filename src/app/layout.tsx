@@ -5,6 +5,13 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: "Studio",
   description: "Creative studio workspace",
+  manifest: '/manifest.json',
+  themeColor: '#7c3aed',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'RM Studio',
+  },
 };
 
 export const viewport: Viewport = {

@@ -37,3 +37,10 @@ next-env.d.ts
 out/
 .env
 build
+
+# Android build artifacts
+android/app/build/
+android/.gradle/
+android/build/
+*.apk
+*.aab

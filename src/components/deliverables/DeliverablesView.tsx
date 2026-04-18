@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { DeliverableRow, DeliverableItem } from "@/app/api/deliverables/route";
+import { usePermission } from "@/hooks/use-permission";
 
 const POLL_INTERVAL = 30_000;
 
@@ -45,13 +46,18 @@ function DeliverableModal({
   row,
   onClose,
   onSave,
+  readOnly = false,
 }: {
   row: DeliverableRow;
   onClose: () => void;
-  onSave: (updated: DeliverableRow) => void;
+  onSave: (updated: DeliverableRow) => Promise<void>;
+  readOnly?: boolean;
 }) {
   const [local, setLocal] = useState<DeliverableRow>({ ...row, deliverables: row.deliverables.map((d) => ({ ...d })) });
-  const [syncState, setSyncState] = useState<"idle" | "syncing" | "ok" | "error" | "setup">("idle");
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "ok" | "error">("idle");
+  const [sheetState, setSheetState] = useState<"idle" | "syncing" | "ok" | "error" | "setup">("idle");
+  const [newDel, setNewDel] = useState("");
+  const newDelRef = useRef<HTMLInputElement>(null);
 
   const status = STATUS_CONFIG[local.overallStatus];
 
@@ -65,6 +71,24 @@ function DeliverableModal({
     });
   }
 
+  function removeChip(i: number) {
+    setLocal((prev) => {
+      const deliverables = prev.deliverables.filter((_, idx) => idx !== i);
+      return { ...prev, deliverables, overallStatus: computeStatus(deliverables, prev.payment100) };
+    });
+  }
+
+  function addDeliverable() {
+    const label = newDel.trim();
+    if (!label) return;
+    setLocal((prev) => {
+      const deliverables = [...prev.deliverables, { label, status: "Pending" as DeliverableItem["status"] }];
+      return { ...prev, deliverables, overallStatus: computeStatus(deliverables, prev.payment100) };
+    });
+    setNewDel("");
+    newDelRef.current?.focus();
+  }
+
   function togglePaymentStep(step: number) {
     setLocal((prev) => {
       const newStep = (prev.paymentStep === step + 1 ? step : step + 1) as DeliverableRow["paymentStep"];
@@ -75,32 +99,37 @@ function DeliverableModal({
     });
   }
 
-  async function syncToSheet() {
-    setSyncState("syncing");
+  async function handleSaveLocal() {
+    setSaveState("saving");
     try {
-      const res = await fetch("/api/deliverables/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(local),
-      });
-      const json = await res.json();
-      if (json.setup) { setSyncState("setup"); return; }
-      if (!res.ok) throw new Error();
-      setSyncState("ok");
-      onSave(local);
-      setTimeout(() => setSyncState("idle"), 3000);
+      await onSave(local);
+      setSaveState("ok");
+      setTimeout(() => setSaveState("idle"), 1800);
     } catch {
-      setSyncState("error");
-      setTimeout(() => setSyncState("idle"), 3000);
+      setSaveState("error");
+      setTimeout(() => setSaveState("idle"), 2000);
     }
   }
 
-  function handleSaveLocal() {
-    onSave(local);
-    onClose();
+  function handleSyncToSheet() {
+    setSheetState("syncing");
+    fetch("/api/deliverables/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(local),
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.setup) { setSheetState("setup"); return; }
+        setSheetState("ok");
+        setTimeout(() => setSheetState("idle"), 2000);
+      })
+      .catch(() => {
+        setSheetState("error");
+        setTimeout(() => setSheetState("idle"), 2000);
+      });
   }
 
-  // Close on Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     window.addEventListener("keydown", onKey);
@@ -108,6 +137,7 @@ function DeliverableModal({
   }, [onClose]);
 
   const hasChanges = JSON.stringify(local) !== JSON.stringify(row);
+  const allDone = local.deliverables.length > 0 && local.deliverables.every((d) => d.status === "Completed");
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -123,7 +153,10 @@ function DeliverableModal({
             <span className="dl-status-pill" style={{ color: status.color, background: status.bg }}>
               {status.label}
             </span>
-            {hasChanges && (
+            {readOnly && (
+              <span className="dl-readonly-pill">View only</span>
+            )}
+            {!readOnly && hasChanges && (
               <span className="dl-modal-unsaved">● unsaved</span>
             )}
           </div>
@@ -134,7 +167,7 @@ function DeliverableModal({
           </button>
         </div>
 
-        {/* Brand */}
+        {/* Body */}
         <div className="dl-modal-body">
           <h2 className="dl-modal-brand">{local.brand}</h2>
 
@@ -149,41 +182,72 @@ function DeliverableModal({
             </div>
           )}
 
-          {/* Deliverable chips — tappable */}
-          {local.deliverables.length > 0 && (
-            <div className="dl-modal-section">
-              <div className="dl-modal-section-title">
-                Deliverables
-                <span className="dl-modal-section-hint">Tap to toggle ✓</span>
-              </div>
-              <div className="dl-modal-chips">
-                {local.deliverables.map((item, i) => {
-                  const done = item.status === "Completed";
-                  return (
-                    <button
-                      key={i}
-                      className={`dl-modal-chip ${done ? "done" : "pending"}`}
-                      onClick={() => toggleChip(i)}
-                    >
-                      <span className="dl-chip-dot" data-done={done} />
-                      {item.label}
-                      {done ? (
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      ) : (
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" opacity={0.35}>
-                          <circle cx="12" cy="12" r="9" />
-                        </svg>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Deliverable chips — tappable yellow → green */}
+          <div className="dl-modal-section">
+            <div className="dl-modal-section-title">
+              Deliverables
+              <span className="dl-modal-section-hint">
+                {allDone ? "✓ All done" : "Tap to mark done"}
+              </span>
             </div>
-          )}
+            <div className="dl-modal-chips">
+              {local.deliverables.map((item, i) => {
+                const done = item.status === "Completed";
+                return (
+                  <button
+                    key={i}
+                    className={`dl-modal-chip ${done ? "done" : "pending"}`}
+                    onClick={() => { if (!readOnly) toggleChip(i); }}
+                    disabled={readOnly}
+                    title={readOnly ? item.label : done ? "Mark as pending" : "Mark as done"}
+                  >
+                    <span className="dl-chip-dot" data-done={done} />
+                    {item.label}
+                    {done ? (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" opacity={0.5}>
+                        <circle cx="12" cy="12" r="9" />
+                      </svg>
+                    )}
+                    {!readOnly && (
+                      <span
+                        className="dl-chip-remove"
+                        role="button"
+                        aria-label="Remove"
+                        onClick={(e) => { e.stopPropagation(); removeChip(i); }}
+                      >×</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Payment pipeline — tappable */}
+            {/* Add new deliverable — hidden in readOnly */}
+            {!readOnly && (
+              <div className="dl-modal-add-row">
+                <input
+                  ref={newDelRef}
+                  className="dl-modal-add-input"
+                  placeholder="Add deliverable…"
+                  value={newDel}
+                  onChange={(e) => setNewDel(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") addDeliverable(); }}
+                />
+                <button
+                  className="dl-modal-add-btn"
+                  onClick={addDeliverable}
+                  disabled={!newDel.trim()}
+                >
+                  + Add
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Payment pipeline */}
           <div className="dl-modal-section">
             <div className="dl-modal-section-title">
               Payment
@@ -213,64 +277,95 @@ function DeliverableModal({
             </div>
           </div>
 
+          {/* Notes (editable) */}
+          <div className="dl-modal-section">
+            <div className="dl-modal-section-title">Notes</div>
+            <textarea
+              className="dl-modal-notes-input"
+              placeholder="Add notes…"
+              value={local.note}
+              onChange={(e) => setLocal((prev) => ({ ...prev, note: e.target.value }))}
+              rows={2}
+            />
+          </div>
+
           {/* Meta */}
-          {(local.invoiceNumber || local.note) && (
+          {local.invoiceNumber && (
             <div className="dl-meta">
-              {local.invoiceNumber && (
-                <span className="dl-meta-item">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  {local.invoiceNumber}
-                </span>
-              )}
-              {local.note && (
-                <span className="dl-meta-item dl-note" title={local.note}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  {local.note}
-                </span>
-              )}
+              <span className="dl-meta-item">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+                </svg>
+                {local.invoiceNumber}
+              </span>
             </div>
           )}
 
-          {/* Setup hint */}
-          {syncState === "setup" && (
+          {/* Sheet sync setup hint */}
+          {sheetState === "setup" && (
             <div className="dl-modal-setup-hint">
-              <strong>One-time setup needed</strong> to sync back to Google Sheets.
-              See the <em>Sync to Sheet</em> instructions in your project docs.
+              <strong>Apps Script not configured.</strong> Add <code>APPS_SCRIPT_URL</code> to your Vercel env vars to enable sheet sync.
             </div>
           )}
         </div>
 
-        {/* Footer actions */}
+        {/* Footer */}
         <div className="dl-modal-footer">
-          <button className="kanban-btn-secondary" onClick={handleSaveLocal}>
-            Save locally
+          <button className="kanban-btn-secondary" onClick={onClose}>
+            Cancel
           </button>
-          <button
-            className={`kanban-btn-primary dl-sync-btn ${syncState}`}
-            onClick={syncToSheet}
-            disabled={syncState === "syncing"}
-          >
-            {syncState === "syncing" && (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "dl-spin 0.8s linear infinite" }}>
-                <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-              </svg>
-            )}
-            {syncState === "ok" && (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            )}
-            {syncState === "idle"   && "Sync to Sheet"}
-            {syncState === "syncing"&& "Syncing…"}
-            {syncState === "ok"    && "Synced!"}
-            {syncState === "error" && "Retry sync"}
-            {syncState === "setup" && "Setup required"}
-          </button>
+
+          {!readOnly && (
+            <div className="dl-footer-actions">
+              {/* Save to Local — persists for all web app users */}
+              <button
+                className={`dl-save-local-btn ${saveState}`}
+                onClick={handleSaveLocal}
+                disabled={saveState === "saving"}
+                title="Save changes for all web app users"
+              >
+                {saveState === "saving" && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "dl-spin 0.8s linear infinite" }}>
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                )}
+                {saveState === "ok" && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+                {saveState === "idle"   && "Save to Local"}
+                {saveState === "saving" && "Saving…"}
+                {saveState === "ok"     && "Saved ✓"}
+                {saveState === "error"  && "Save failed"}
+              </button>
+
+              {/* Sync to Sheet — pushes to Google Sheets */}
+              <button
+                className={`dl-sync-sheet-btn ${sheetState}`}
+                onClick={handleSyncToSheet}
+                disabled={sheetState === "syncing"}
+                title="Push changes to Google Sheet"
+              >
+                {sheetState === "syncing" && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "dl-spin 0.8s linear infinite" }}>
+                    <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
+                )}
+                {sheetState === "ok" && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+                {sheetState === "idle"    && "Sync to Sheet"}
+                {sheetState === "syncing" && "Syncing…"}
+                {sheetState === "ok"      && "Synced ✓"}
+                {sheetState === "error"   && "Sync failed"}
+                {sheetState === "setup"   && "Setup needed"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -326,7 +421,9 @@ function DeliverableCard({
               return (
                 <span key={i} className="dl-chip" data-done={done}>
                   <span className="dl-chip-dot" data-done={done} />
-                  <Highlight text={item.label} query={search} />
+                  <span className="dl-chip-label">
+                    <Highlight text={item.label} query={search} />
+                  </span>
                 </span>
               );
             })}
@@ -400,6 +497,8 @@ const FILTER_TABS: { key: FilterTab; label: string }[] = [
 
 // ── Main view ─────────────────────────────────────────────────────────────────
 export function DeliverablesView() {
+  const permission = usePermission("deliverables");
+  const canEdit = permission === "edit";
   const [data, setData] = useState<DeliverableRow[]>([]);
   const [overrides, setOverrides] = useState<Record<string, DeliverableRow>>({});
   const [loading, setLoading] = useState(true);
@@ -424,9 +523,21 @@ export function DeliverablesView() {
     if (!silent) setLoading(true); else setSyncing(true);
     setError(null);
     try {
-      const res = await fetch("/api/deliverables", { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed");
-      const json = await res.json();
+      const [sheetRes, overridesEnv] = await Promise.all([
+        fetch("/api/deliverables", { cache: "no-store" }),
+        fetch("/api/sync/deliverable-overrides", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null),
+      ]);
+      const json = await sheetRes.json();
+
+      if (!sheetRes.ok) {
+        if (json.error === "sheet_private") {
+          setError("sheet_private");
+        } else {
+          throw new Error(json.error ?? "Failed");
+        }
+        return;
+      }
+
       const next: DeliverableRow[] = json.deliverables ?? [];
       const nextStr = JSON.stringify(next);
       if (silent && nextStr !== prevDataRef.current) {
@@ -435,6 +546,12 @@ export function DeliverablesView() {
       }
       prevDataRef.current = nextStr;
       setData(next);
+
+      // Overlay server-side overrides so all users see the same saved state
+      if (overridesEnv?.data && typeof overridesEnv.data === "object") {
+        setOverrides(overridesEnv.data as Record<string, DeliverableRow>);
+      }
+
       setLastFetched(new Date());
     } catch {
       if (!silent) setError("Could not load deliverables.");
@@ -492,8 +609,16 @@ export function DeliverablesView() {
 
   const selectedRow = selectedId ? (displayData.find((r) => r.id === selectedId) ?? null) : null;
 
-  function handleSave(updated: DeliverableRow) {
-    setOverrides((prev) => ({ ...prev, [updated.id]: updated }));
+  async function handleSave(updated: DeliverableRow) {
+    const next = (prev: Record<string, DeliverableRow>) => ({ ...prev, [updated.id]: updated });
+    setOverrides(next);
+    // Persist to Redis so all web app users see the updated state
+    const currentOverrides = { ...overrides, [updated.id]: updated };
+    await fetch("/api/sync/deliverable-overrides", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(currentOverrides),
+    });
   }
 
   return (
@@ -575,8 +700,38 @@ export function DeliverablesView() {
       {loading && <div className="dl-loading"><div className="dl-spinner" /><span>Syncing from Google Sheets…</span></div>}
       {error && !loading && (
         <div className="dl-error">
-          <p>{error}</p>
-          <button className="kanban-btn-primary" onClick={() => load()}>Try again</button>
+          {error === "sheet_private" ? (
+            <>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>🔒</div>
+              <p style={{ fontWeight: 600, marginBottom: 4 }}>Google Sheet is private</p>
+              <p style={{ fontSize: 13, color: "var(--app-text-muted)", marginBottom: 16, lineHeight: 1.5 }}>
+                Open the sheet → <strong>Share</strong> → change access to{" "}
+                <strong>&ldquo;Anyone with the link&rdquo; → Viewer</strong>, then refresh below.
+              </p>
+              <a
+                href={`https://docs.google.com/spreadsheets/d/1PImkkw3DEsbZ8Vaveqmc-nyPkP_xQhoAGfesPeE1_fY/edit#gid=1182035153`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="kanban-btn-secondary"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none", marginBottom: 10 }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+                Open Google Sheet
+              </a>
+              <br />
+              <button className="kanban-btn-primary" onClick={() => load()} style={{ marginTop: 6 }}>
+                Retry
+              </button>
+            </>
+          ) : (
+            <>
+              <p>{error}</p>
+              <button className="kanban-btn-primary" onClick={() => load()}>Try again</button>
+            </>
+          )}
         </div>
       )}
       {!loading && !error && filtered.length === 0 && (
@@ -606,6 +761,7 @@ export function DeliverablesView() {
           row={selectedRow}
           onClose={() => setSelectedId(null)}
           onSave={handleSave}
+          readOnly={!canEdit}
         />
       )}
     </div>
