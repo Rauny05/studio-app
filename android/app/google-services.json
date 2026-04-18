@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "823578626943",
-    "project_id": "rmstudio-c7c7f",
-    "storage_bucket": "rmstudio-c7c7f.firebasestorage.app"
+    "project_number": "464674279408",
+    "project_id": "rm-studio2",
+    "storage_bucket": "rm-studio2.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:823578626943:android:fb78da2af3b5b45849e84a",
+        "mobilesdk_app_id": "1:464674279408:android:a4e81f7e4619fb5f28d735",
         "android_client_info": {
           "package_name": "com.rmmedia.studio"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDaNrIUUmualcT3JGqEOfpEFox6xmINO3Q"
+          "current_key": "AIzaSyBFbYoi5mVFqNzNEg1-QFJ0drjyw8Pf2XY"
         }
       ],
       "services": {

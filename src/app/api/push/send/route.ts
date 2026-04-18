@@ -4,7 +4,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 
-const PROJECT_ID = "rmstudio-c7c7f";
+const PROJECT_ID = "rm-studio2";
 
 async function getAccessToken(serviceAccount: {
   client_email: string;
