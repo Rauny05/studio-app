@@ -32,7 +32,7 @@ async function getAccessToken(serviceAccount: {
     .replace(/-----END PRIVATE KEY-----/, "")
     .replace(/\n/g, "");
 
-  const binaryKey = Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0));
+  const binaryKey = Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0)).buffer as ArrayBuffer;
   const cryptoKey = await crypto.subtle.importKey(
     "pkcs8",
     binaryKey,
@@ -41,7 +41,7 @@ async function getAccessToken(serviceAccount: {
     ["sign"]
   );
 
-  const signingBytes = new TextEncoder().encode(signingInput);
+  const signingBytes = new TextEncoder().encode(signingInput).buffer as ArrayBuffer;
   const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, signingBytes);
 
   const b64url = (buf: ArrayBuffer) =>
