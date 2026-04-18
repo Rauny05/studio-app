@@ -1,4 +1,4 @@
 {
-    "buildCommand": "node deploy.mjs && next build"
-  }
-  
+  "buildCommand": "node deploy.mjs && next build",
+  "alias": ["rmmedia-studio.vercel.app"]
+}
