@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run Capacitor sync (generates capacitor.build.gradle + plugin files)
+        run: npx cap sync android
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
