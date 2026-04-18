@@ -32,6 +32,18 @@ async function redisSet(key: string, value: string) {
   });
 }
 
+async function getTokens(): Promise<string[]> {
+  const res = await fetch(`${REDIS_URL()}/get/studio:push-tokens`, {
+    headers: { Authorization: `Bearer ${REDIS_TOKEN()}` },
+    cache: "no-store",
+  });
+  const json = await res.json() as { result: unknown };
+  let v: unknown = json.result;
+  while (typeof v === "string") { try { v = JSON.parse(v); } catch { break; } }
+  if (typeof v === "object" && v !== null) return Object.values(v as Record<string, string>);
+  return [];
+}
+
 async function sendNtfy(title: string, body: string, tag: string) {
   const topic = process.env.NTFY_TOPIC;
   if (!topic) return;
@@ -90,6 +102,24 @@ export async function GET(req: NextRequest) {
     tag = "pencil";
   }
 
+  // Try FCM first (in-app push), fall back to ntfy.sh
+  const tokens = await getTokens();
+  let fcmSent = 0;
+  if (tokens.length > 0 && process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      const base = req.nextUrl.origin;
+      const res = await fetch(`${base}/api/push/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tokens, title, body }),
+      });
+      const json = await res.json() as { sent: number };
+      fcmSent = json.sent ?? 0;
+    } catch { /* fall through to ntfy */ }
+  }
+
+  // ntfy.sh as fallback or supplement
   await sendNtfy(title, body, tag);
-  return NextResponse.json({ changed: true, title, body });
+
+  return NextResponse.json({ changed: true, title, body, fcmSent, ntfy: true });
 }
