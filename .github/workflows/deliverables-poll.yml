@@ -1,0 +1,24 @@
+name: Deliverables Sheet Poller
+
+on:
+  schedule:
+    # Every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Poll deliverables sheet for changes
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            "https://rmmedia-studio.vercel.app/api/push/poll?secret=${{ secrets.POLL_SECRET }}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+          echo "Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Poll failed with status $HTTP_CODE"
+            exit 1
+          fi
