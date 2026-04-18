@@ -1,54 +1,44 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { UIStoreProvider, useUIStore } from "@/store/ui-store";
 import { useKanbanStore } from "@/store/kanban-store";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
+import { BottomNav } from "./BottomNav";
 import { QuickAdd } from "@/components/quick-add/QuickAdd";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { useVaultSync } from "@/hooks/useVaultSync";
+import { CloudSync } from "@/components/sync/CloudSync";
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
+  const [isMobile, setIsMobile] = useState(false);
   useVaultSync();
 
-  // Rehydrate after mount so SSR and the initial client render both use
-  // the seed defaults — prevents localStorage vs server mismatch.
   useEffect(() => {
     useKanbanStore.persist.rehydrate();
   }, []);
 
-  // On mobile, close sidebar when viewport resizes to desktop
   useEffect(() => {
-    function onResize() {
-      if (window.innerWidth >= 768 && sidebarCollapsed) {
-        setSidebarCollapsed(false);
-      }
-    }
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [sidebarCollapsed, setSidebarCollapsed]);
-
-  const isMobileNavOpen = !sidebarCollapsed;
+    const mq = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   return (
-    <div className="app-shell" data-sidebar-collapsed={sidebarCollapsed}>
-      {/* Mobile backdrop — closes nav when tapped */}
-      {isMobileNavOpen && (
-        <div
-          className="mobile-nav-backdrop"
-          onClick={() => setSidebarCollapsed(true)}
-          aria-hidden="true"
-        />
-      )}
-      <Sidebar />
+    <div className="app-shell" data-sidebar-collapsed={isMobile ? true : sidebarCollapsed} data-mobile={isMobile}>
+      {!isMobile && <Sidebar />}
       <div className="app-main">
         <Navbar />
         <main className="app-content">{children}</main>
       </div>
+      {isMobile && <BottomNav />}
       <QuickAdd />
       <CommandPalette />
+      <CloudSync />
     </div>
   );
 }

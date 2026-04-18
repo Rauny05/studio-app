@@ -4302,6 +4302,129 @@ html[data-theme="dark"] .dl-chip[data-done="false"] { color: #fbbf24; background
   margin: 0;
 }
 
+/* Auth tabs (Google / Access Code) */
+.auth-tabs {
+  display: flex;
+  width: 100%;
+  background: var(--app-elevated);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 7px 0;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-text-muted);
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+}
+.auth-tab.active {
+  background: var(--app-surface);
+  color: var(--app-text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* Passcode form */
+.auth-passcode-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+.auth-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-elevated);
+  color: var(--app-text);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 150ms;
+}
+.auth-input:focus {
+  border-color: var(--app-accent);
+}
+.auth-passcode-btn {
+  width: 100%;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: #7c3aed;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 150ms;
+}
+.auth-passcode-btn:hover { opacity: 0.88; }
+.auth-passcode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ═══════════════════════════════════════════════
+   BOTTOM NAV (mobile)
+   ═══════════════════════════════════════════════ */
+.bottom-nav {
+  display: none; /* hidden by default; shown when [data-mobile=true] is set */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--app-surface);
+  border-top: 1px solid var(--app-border);
+  z-index: 300;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  align-items: stretch;
+  justify-content: space-around;
+}
+[data-mobile="true"] .bottom-nav,
+.bottom-nav.visible {
+  display: flex;
+}
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  padding: 6px 4px;
+  color: var(--app-text-muted);
+  text-decoration: none;
+  transition: color 120ms;
+}
+.bottom-nav-item.active {
+  color: #7c3aed;
+}
+.bottom-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.bottom-nav-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Ensure content doesn't hide behind bottom nav on mobile */
+[data-mobile="true"] .app-content {
+  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* On mobile: no sidebar, full-width main */
+[data-mobile="true"] .app-main {
+  margin-left: 0 !important;
+  width: 100%;
+}
+
 /* ═══════════════════════════════════════════════
    NAVBAR AVATAR DROPDOWN
    ═══════════════════════════════════════════════ */
