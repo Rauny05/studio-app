@@ -5,8 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useUIStore } from "@/store/ui-store";
-import { useKanbanStore } from "@/store/kanban-store";
-
 const nav = [
   {
     label: "Dashboard",
@@ -50,6 +48,17 @@ const nav = [
     ),
   },
   {
+    label: "Todos",
+    href: "/todos",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+        <line x1="12" y1="17" x2="12" y2="21" />
+      </svg>
+    ),
+  },
+  {
     label: "Settings",
     href: "/settings",
     icon: (
@@ -63,7 +72,6 @@ const nav = [
 
 export function Sidebar() {
   const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
-  const { boards } = useKanbanStore();
   const { data: session } = useSession();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
@@ -79,8 +87,6 @@ export function Sidebar() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
-
-  const recentBoards = boards.slice(0, 6);
 
   return (
     <aside
@@ -101,12 +107,13 @@ export function Sidebar() {
       {/* Primary nav */}
       <nav className="sidebar-nav">
         {nav.filter((item) => {
-          // Show all items if no session yet (avoids flicker), otherwise check permissions
-          if (!mounted || permissions.length === 0) return true;
+          // Admin always sees everything; unloaded session = show all (avoids flicker)
+          if (!mounted || isAdmin || permissions.length === 0) return true;
           const key = item.href.replace("/", "");
-          return permissions.includes(key);
+          // support both full-access ("todos") and view-only ("todos:view")
+          return permissions.includes(key) || permissions.includes(`${key}:view`);
         }).map((item) => {
-          const active = pathname === item.href || (item.href === "/projects" && pathname.startsWith("/projects/")) || (item.href === "/calendar" && pathname.startsWith("/calendar")) || (item.href === "/deliverables" && pathname.startsWith("/deliverables"));
+          const active = pathname === item.href || (item.href === "/projects" && pathname.startsWith("/projects/")) || (item.href === "/calendar" && pathname.startsWith("/calendar")) || (item.href === "/deliverables" && pathname.startsWith("/deliverables")) || (item.href === "/todos" && pathname.startsWith("/todos"));
           return (
             <Link
               key={item.href}
@@ -139,47 +146,6 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* Recent projects */}
-      {mounted && !sidebarCollapsed && recentBoards.length > 0 && (
-        <div className="sidebar-section">
-          <div className="sidebar-section-header">Recent projects</div>
-          {recentBoards.map((board) => {
-            const active = pathname === `/projects/${board.id}`;
-            return (
-              <Link
-                key={board.id}
-                href={`/projects/${board.id}`}
-                className={`sidebar-nav-item sidebar-board-item ${active ? "active" : ""}`}
-              >
-                <span
-                  className="sidebar-board-dot"
-                  style={{ background: board.color }}
-                />
-                <span className="sidebar-nav-label" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {board.emoji} {board.title}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Collapsed board dots */}
-      {mounted && sidebarCollapsed && recentBoards.length > 0 && (
-        <div className="sidebar-collapsed-boards">
-          {recentBoards.map((board) => (
-            <Link
-              key={board.id}
-              href={`/projects/${board.id}`}
-              className="sidebar-collapsed-board"
-              title={board.title}
-              style={{ background: board.color + "22", color: board.color }}
-            >
-              {board.emoji}
-            </Link>
-          ))}
-        </div>
-      )}
     </aside>
   );
 }

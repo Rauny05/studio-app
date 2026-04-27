@@ -507,9 +507,11 @@ export function DeliverablesView() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterTab>("all");
   const [month, setMonth] = useState("all");
+  const [talent, setTalent] = useState("all");
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [liveIndicator, setLiveIndicator] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<"idle" | "ok">("idle");
   const searchRef = useRef<HTMLInputElement>(null);
   const prevDataRef = useRef<string>("");
 
@@ -585,11 +587,18 @@ export function DeliverablesView() {
     return ["all", ...Array.from(seen)];
   }, [displayData]);
 
+  const talents = useMemo(() => {
+    const seen = new Set<string>();
+    displayData.forEach((d) => { if (d.pocName) seen.add(d.pocName); });
+    return ["all", ...Array.from(seen).sort()];
+  }, [displayData]);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return displayData.filter((row) => {
       if (filter !== "all" && row.overallStatus !== filter) return false;
       if (month !== "all" && row.month !== month) return false;
+      if (talent !== "all" && row.pocName !== talent) return false;
       if (q) return (
         row.brand.toLowerCase().includes(q) ||
         row.pnNo.toLowerCase().includes(q) ||
@@ -599,7 +608,21 @@ export function DeliverablesView() {
       );
       return true;
     });
-  }, [displayData, filter, month, search]);
+  }, [displayData, filter, month, talent, search]);
+
+  function copyPaymentSummary() {
+    const rows = filtered.filter((r) => r.overallStatus === "awaiting-payment");
+    if (!rows.length) return;
+    const lines = rows.map((r) => {
+      const dlList = r.deliverables.map((d) => `  • ${d.label}`).join("\n");
+      return `${r.pnNo.toUpperCase()} — ${r.brand}\n${dlList}${r.pocName ? `\n  Contact: ${r.pocName}` : ""}`;
+    });
+    const text = `Awaiting Payment (${rows.length})\n${"─".repeat(40)}\n${lines.join("\n\n")}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopyState("ok");
+      setTimeout(() => setCopyState("idle"), 2000);
+    });
+  }
 
   const counts = useMemo(() => {
     const c = { pending: 0, "in-progress": 0, "awaiting-payment": 0, done: 0 };
@@ -688,6 +711,34 @@ export function DeliverablesView() {
           <select className="dl-month-select" value={month} onChange={(e) => setMonth(e.target.value)}>
             {months.map((m) => <option key={m} value={m}>{m === "all" ? "All months" : m}</option>)}
           </select>
+        )}
+        {talents.length > 2 && (
+          <select className="dl-month-select" value={talent} onChange={(e) => setTalent(e.target.value)} title="Filter by creator/talent">
+            {talents.map((t) => <option key={t} value={t}>{t === "all" ? "All creators" : t}</option>)}
+          </select>
+        )}
+        {filter === "awaiting-payment" && counts["awaiting-payment"] > 0 && (
+          <button
+            className={`dl-copy-payment-btn ${copyState === "ok" ? "ok" : ""}`}
+            onClick={copyPaymentSummary}
+            title="Copy payment summary to clipboard"
+          >
+            {copyState === "ok" ? (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Copied!
+              </>
+            ) : (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+                Copy {counts["awaiting-payment"]} payment{counts["awaiting-payment"] !== 1 ? "s" : ""}
+              </>
+            )}
+          </button>
         )}
         <div className="dl-filter-tabs">
           {FILTER_TABS.map((tab) => (

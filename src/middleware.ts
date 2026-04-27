@@ -9,6 +9,7 @@ const ROUTE_PERMISSIONS: Record<string, string> = {
   "/calendar":     "calendar",
   "/settings":     "settings",
   "/admin":        "admin",
+  "/todos":        "todos",
 };
 
 export default withAuth(
@@ -29,9 +30,16 @@ export default withAuth(
       pathname === route || pathname.startsWith(route + "/")
     )?.[1];
 
+    // Admin always has full access — skip permission check
+    if (token.role === "admin") return NextResponse.next();
+
     if (requiredPermission) {
       const perms = token.permissions ?? [];
-      if (!perms.includes(requiredPermission)) {
+      // Allow both full access (key) and view-only access (key:view)
+      const hasAccess =
+        perms.includes(requiredPermission) ||
+        perms.includes(`${requiredPermission}:view`);
+      if (!hasAccess) {
         return NextResponse.redirect(new URL("/auth/unauthorized", req.url));
       }
     }
@@ -56,5 +64,6 @@ export const config = {
     "/calendar/:path*",
     "/settings/:path*",
     "/admin/:path*",
+    "/todos/:path*",
   ],
 };

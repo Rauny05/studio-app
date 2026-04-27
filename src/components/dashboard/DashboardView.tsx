@@ -968,7 +968,7 @@ export function DashboardView() {
               <line x1="9" y1="9" x2="15" y2="9" /><line x1="9" y1="12" x2="15" y2="12" /><line x1="9" y1="15" x2="12" y2="15" />
             </svg>
           }
-          label="Total cards"
+          label="Project cards"
           value={allCards.length}
           sub={`${publishedCount} published`}
         />
@@ -979,7 +979,7 @@ export function DashboardView() {
               <polyline points="20 6 9 17 4 12" />
             </svg>
           }
-          label="Completion rate"
+          label="Published rate"
           value={`${completionRate}%`}
           sub={`${publishedCount} of ${allCards.length} cards`}
         />
@@ -1006,6 +1006,7 @@ export function DashboardView() {
         <div className="chart-card">
           <div className="chart-card-header">
             <h3 className="chart-card-title">Cards by status</h3>
+            <span className="chart-card-scope">Projects</span>
           </div>
           {statusData.length > 0 ? (
             <>
@@ -1020,13 +1021,14 @@ export function DashboardView() {
               </div>
             </>
           ) : (
-            <div className="chart-empty">No cards yet</div>
+            <div className="chart-empty">No project cards yet</div>
           )}
         </div>
 
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3 className="chart-card-title">Deliverable types</h3>
+            <h3 className="chart-card-title">Card types</h3>
+            <span className="chart-card-scope">Projects</span>
           </div>
           {typeData.length > 0 ? (
             <>

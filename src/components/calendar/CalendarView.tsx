@@ -290,6 +290,88 @@ function MobileCalendar({
   );
 }
 
+// ── Desktop: week view ────────────────────────────────────────────────────────
+
+function WeekView({
+  weekStart,
+  allCards,
+  boards,
+  todayStr,
+  onOpenCard,
+}: {
+  weekStart: Date;
+  allCards: Card[];
+  boards: Board[];
+  todayStr: string;
+  onOpenCard: (id: string) => void;
+}) {
+  const { getReels } = useReelsStore();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const days = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      const dateStr = toDateStr(d);
+      return { date: d, dateStr, isToday: dateStr === todayStr, isPast: d < today && dateStr !== todayStr };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart, todayStr]);
+
+  return (
+    <div className="cal-week-view">
+      {/* Header row */}
+      <div className="cal-week-header">
+        {days.map(({ date, dateStr, isToday }) => (
+          <div key={dateStr} className={`cal-week-col-header ${isToday ? "today" : ""}`}>
+            <span className="cal-week-col-dow">{date.toLocaleDateString("en-US", { weekday: "short" })}</span>
+            <span className={`cal-week-col-num ${isToday ? "today" : ""}`}>{date.getDate()}</span>
+          </div>
+        ))}
+      </div>
+      {/* Day columns */}
+      <div className="cal-week-body">
+        {days.map(({ date, dateStr, isToday, isPast }) => {
+          const dayCards = allCards.filter((c) => c.dueDate === dateStr);
+          const reels = getReels(dateStr);
+          return (
+            <div key={dateStr} className={`cal-week-col ${isToday ? "today" : ""} ${isPast ? "past" : ""}`}>
+              {dayCards.map((card) => {
+                const board = boards.find((b) => b.id === card.boardId);
+                const isOverdue = new Date(card.dueDate! + "T00:00:00") < today && dateStr < todayStr;
+                return (
+                  <button
+                    key={card.id}
+                    className={`cal-week-card ${isOverdue ? "overdue" : ""}`}
+                    style={{ borderLeftColor: board?.color ?? "#7c3aed" }}
+                    onClick={() => onOpenCard(card.id)}
+                    title={card.title}
+                  >
+                    {card.deliverableType && DELIVERABLE_CONFIG[card.deliverableType] && (
+                      <span className="cal-week-card-icon">{DELIVERABLE_CONFIG[card.deliverableType].icon}</span>
+                    )}
+                    <span className="cal-week-card-title">{card.title}</span>
+                  </button>
+                );
+              })}
+              {reels.map((r) => (
+                <div key={r.id} className="cal-week-reel">
+                  <span>🎬</span>
+                  <span className="cal-week-reel-name">{r.name}</span>
+                </div>
+              ))}
+              {dayCards.length === 0 && reels.length === 0 && (
+                <div className="cal-week-empty" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Main CalendarView ────────────────────────────────────────────────────────
 
 export function CalendarView() {
@@ -297,6 +379,13 @@ export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(() => {
     const d = new Date();
     return { year: d.getFullYear(), month: d.getMonth() };
+  });
+  const [viewMode, setViewMode] = useState<"month" | "week">("month");
+  const [weekStart, setWeekStart] = useState(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay()); // Start of current week (Sun)
+    return d;
   });
   const [isMobile, setIsMobile] = useState(false);
 
@@ -333,40 +422,81 @@ export function CalendarView() {
   const todayStr = toDateStr(today);
   const monthName = new Date(year, month).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  function prevMonth() {
-    setCurrentDate(({ year, month }) => month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 });
+  // Week title: "Apr 20 – 26, 2026"
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const weekTitle = weekStart.getMonth() === weekEnd.getMonth()
+    ? `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${weekEnd.getDate()}, ${weekEnd.getFullYear()}`
+    : `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric" })}, ${weekEnd.getFullYear()}`;
+
+  function prevPeriod() {
+    if (viewMode === "week") {
+      setWeekStart((prev) => { const d = new Date(prev); d.setDate(d.getDate() - 7); return d; });
+    } else {
+      setCurrentDate(({ year, month }) => month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 });
+    }
   }
-  function nextMonth() {
-    setCurrentDate(({ year, month }) => month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 });
+  function nextPeriod() {
+    if (viewMode === "week") {
+      setWeekStart((prev) => { const d = new Date(prev); d.setDate(d.getDate() + 7); return d; });
+    } else {
+      setCurrentDate(({ year, month }) => month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 });
+    }
   }
   function goToday() {
     const d = new Date();
     setCurrentDate({ year: d.getFullYear(), month: d.getMonth() });
+    const ws = new Date(d);
+    ws.setHours(0, 0, 0, 0);
+    ws.setDate(d.getDate() - d.getDay());
+    setWeekStart(ws);
   }
 
   return (
     <div className="calendar-page">
       <div className="calendar-header">
         <div className="calendar-nav">
-          <button className="calendar-nav-btn" onClick={prevMonth} aria-label="Previous month">
+          <button className="calendar-nav-btn" onClick={prevPeriod} aria-label="Previous">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <h2 className="calendar-month-title">{monthName}</h2>
-          <button className="calendar-nav-btn" onClick={nextMonth} aria-label="Next month">
+          <h2 className="calendar-month-title">{viewMode === "week" ? weekTitle : monthName}</h2>
+          <button className="calendar-nav-btn" onClick={nextPeriod} aria-label="Next">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
         </div>
-        <button className="calendar-today-btn" onClick={goToday}>Today</button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {!isMobile && (
+            <div className="cal-view-toggle">
+              <button
+                className={`cal-view-btn ${viewMode === "month" ? "active" : ""}`}
+                onClick={() => setViewMode("month")}
+              >Month</button>
+              <button
+                className={`cal-view-btn ${viewMode === "week" ? "active" : ""}`}
+                onClick={() => setViewMode("week")}
+              >Week</button>
+            </div>
+          )}
+          <button className="calendar-today-btn" onClick={goToday}>Today</button>
+        </div>
       </div>
 
       {isMobile ? (
         <MobileCalendar
           year={year}
           month={month}
+          allCards={allCards}
+          boards={boards}
+          todayStr={todayStr}
+          onOpenCard={openCard}
+        />
+      ) : viewMode === "week" ? (
+        <WeekView
+          weekStart={weekStart}
           allCards={allCards}
           boards={boards}
           todayStr={todayStr}

@@ -30,7 +30,12 @@ export async function POST(req: NextRequest) {
     addedAt: new Date().toISOString(),
   };
   users.push(newUser);
-  await saveUsers(users);
+  try {
+    await saveUsers(users);
+  } catch (err) {
+    console.error("[admin/users] POST save failed:", err);
+    return NextResponse.json({ error: "Failed to save — storage error" }, { status: 500 });
+  }
   return NextResponse.json({ user: newUser });
 }
 
@@ -41,7 +46,12 @@ export async function PATCH(req: NextRequest) {
   const idx = users.findIndex((u) => u.email === email);
   if (idx === -1) return NextResponse.json({ error: "User not found" }, { status: 404 });
   users[idx].permissions = permissions;
-  await saveUsers(users);
+  try {
+    await saveUsers(users);
+  } catch (err) {
+    console.error("[admin/users] PATCH save failed:", err);
+    return NextResponse.json({ error: "Failed to save — storage error" }, { status: 500 });
+  }
   return NextResponse.json({ user: users[idx] });
 }
 
@@ -49,6 +59,11 @@ export async function DELETE(req: NextRequest) {
   if (!(await assertAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { email } = await req.json();
   const users = (await loadUsers()).filter((u) => u.email !== email);
-  await saveUsers(users);
+  try {
+    await saveUsers(users);
+  } catch (err) {
+    console.error("[admin/users] DELETE save failed:", err);
+    return NextResponse.json({ error: "Failed to save — storage error" }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

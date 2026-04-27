@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { signOut } from "next-auth/react";
 import type { AllowedUser } from "@/app/api/auth/[...nextauth]/route";
 
-const ALL_PERMISSIONS = ["dashboard", "projects", "deliverables", "calendar", "settings"];
+const ALL_PERMISSIONS = ["dashboard", "projects", "deliverables", "calendar", "settings", "todos"];
 
 const PERMISSION_LABELS: Record<string, string> = {
   dashboard:    "Dashboard",
@@ -11,7 +12,61 @@ const PERMISSION_LABELS: Record<string, string> = {
   deliverables: "Deliverables",
   calendar:     "Calendar",
   settings:     "Settings",
+  todos:        "Todos",
 };
+
+function getLevel(permissions: string[], key: string): "none" | "view" | "edit" {
+  if (permissions.includes(key)) return "edit";
+  if (permissions.includes(`${key}:view`)) return "view";
+  return "none";
+}
+
+function cycleLevel(permissions: string[], key: string): string[] {
+  const level = getLevel(permissions, key);
+  const filtered = permissions.filter((p) => p !== key && p !== `${key}:view`);
+  if (level === "none") return [...filtered, `${key}:view`];
+  if (level === "view") return [...filtered, key];
+  return filtered;
+}
+
+function LevelButton({
+  perm,
+  permissions,
+  disabled,
+  onClick,
+}: {
+  perm: string;
+  permissions: string[];
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  const level = getLevel(permissions, perm);
+  const levelLabel = level === "edit" ? "Edit" : level === "view" ? "View" : "No access";
+
+  return (
+    <button
+      className="admin-perm-level-btn"
+      data-level={level}
+      disabled={disabled}
+      onClick={onClick}
+      title={`${PERMISSION_LABELS[perm]}: ${levelLabel} — click to cycle`}
+    >
+      {level === "view" && (
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+        </svg>
+      )}
+      {level === "edit" && (
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+      )}
+      <span className="admin-perm-level-label">{PERMISSION_LABELS[perm]}</span>
+      <span className="admin-perm-level-state">{levelLabel}</span>
+    </button>
+  );
+}
 
 export function UserManagement() {
   const [users, setUsers] = useState<AllowedUser[]>([]);
@@ -52,9 +107,7 @@ export function UserManagement() {
   async function togglePermission(email: string, perm: string) {
     const user = users.find((u) => u.email === email);
     if (!user) return;
-    const next = user.permissions.includes(perm)
-      ? user.permissions.filter((p) => p !== perm)
-      : [...user.permissions, perm];
+    const next = cycleLevel(user.permissions, perm);
     setSaving(email);
     await fetch("/api/admin/users", {
       method: "PATCH",
@@ -88,10 +141,30 @@ export function UserManagement() {
           <div className="admin-avatar admin-avatar-admin">R</div>
           <div>
             <div className="admin-user-email">raunaq@rmmedia.in</div>
-            <div className="admin-user-role">Admin · Full access</div>
+            <div className="admin-user-role">Admin · Full access to everything</div>
           </div>
         </div>
         <span className="admin-badge admin-badge-admin">Admin</span>
+      </div>
+
+      {/* Emergency restore */}
+      <div className="admin-restore-card">
+        <div className="admin-restore-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#f97316", flexShrink: 0 }}>
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <div>
+            <div className="admin-restore-title">Restore access</div>
+            <div className="admin-restore-sub">If the app feels broken or you&apos;re locked out — refresh your session. All data is preserved.</div>
+          </div>
+        </div>
+        <button
+          className="admin-restore-btn"
+          onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+        >
+          Sign out &amp; refresh
+        </button>
       </div>
 
       {/* Add user */}
@@ -116,19 +189,18 @@ export function UserManagement() {
         {error && <p className="admin-error">{error}</p>}
 
         {/* Default permission toggles for new user */}
-        <div className="admin-perm-row" style={{ marginTop: 10 }}>
-          <span className="admin-perm-label">Default access:</span>
-          {ALL_PERMISSIONS.map((perm) => (
-            <button
-              key={perm}
-              className={`admin-perm-toggle ${newPerms.includes(perm) ? "active" : ""}`}
-              onClick={() => setNewPerms((p) =>
-                p.includes(perm) ? p.filter((x) => x !== perm) : [...p, perm]
-              )}
-            >
-              {PERMISSION_LABELS[perm]}
-            </button>
-          ))}
+        <div style={{ marginTop: 12 }}>
+          <div className="admin-perm-label" style={{ marginBottom: 8 }}>Default access — click to cycle: No access → View → Edit</div>
+          <div className="admin-perm-level-group">
+            {ALL_PERMISSIONS.map((perm) => (
+              <LevelButton
+                key={perm}
+                perm={perm}
+                permissions={newPerms}
+                onClick={() => setNewPerms((p) => cycleLevel(p, perm))}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -151,43 +223,45 @@ export function UserManagement() {
           <div className="admin-users-list">
             {users.map((user) => (
               <div key={user.email} className="admin-user-row">
-                <div className="admin-user-info">
-                  <div className="admin-avatar">
-                    {user.email[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="admin-user-email">{user.email}</div>
-                    <div className="admin-user-role">
-                      Added {new Date(user.addedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                {/* Top: avatar + email + delete */}
+                <div className="admin-user-row-top">
+                  <div className="admin-user-info">
+                    <div className="admin-avatar">
+                      {user.email[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="admin-user-email">{user.email}</div>
+                      <div className="admin-user-role">
+                        Added {new Date(user.addedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        {saving === user.email && <span style={{ marginLeft: 6, color: "var(--app-text-muted)" }}>Saving…</span>}
+                      </div>
                     </div>
                   </div>
+                  <button
+                    className="admin-remove-btn"
+                    onClick={() => removeUser(user.email)}
+                    title="Remove user"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4h6v2" />
+                    </svg>
+                  </button>
                 </div>
 
-                <div className="admin-user-perms">
+                {/* Bottom: permission chips */}
+                <div className="admin-perm-level-group">
                   {ALL_PERMISSIONS.map((perm) => (
-                    <button
+                    <LevelButton
                       key={perm}
-                      className={`admin-perm-toggle ${user.permissions.includes(perm) ? "active" : ""}`}
-                      onClick={() => togglePermission(user.email, perm)}
+                      perm={perm}
+                      permissions={user.permissions}
                       disabled={saving === user.email}
-                      title={user.permissions.includes(perm) ? `Remove ${perm} access` : `Grant ${perm} access`}
-                    >
-                      {PERMISSION_LABELS[perm]}
-                    </button>
+                      onClick={() => togglePermission(user.email, perm)}
+                    />
                   ))}
                 </div>
-
-                <button
-                  className="admin-remove-btn"
-                  onClick={() => removeUser(user.email)}
-                  title="Remove user"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" />
-                    <path d="M9 6V4h6v2" />
-                  </svg>
-                </button>
               </div>
             ))}
           </div>

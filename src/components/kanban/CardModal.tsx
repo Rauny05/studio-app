@@ -44,8 +44,10 @@ export function CardModal({ card, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<"script" | "details" | "media">("script");
   const [showTemplates, setShowTemplates] = useState(false);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const templateBtnRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const wordCount = description.trim() ? description.trim().split(/\s+/).length : 0;
   const duration = wordCount > 0 ? Math.ceil(wordCount / 150) : 0;
@@ -81,6 +83,21 @@ export function CardModal({ card, onClose }: Props) {
       document.removeEventListener("mousedown", onClickOutside);
     };
   }, [showTemplates]);
+
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setThumbnailUrl(reader.result as string);
+      setUploadingImage(false);
+    };
+    reader.onerror = () => setUploadingImage(false);
+    reader.readAsDataURL(file);
+    // reset input so same file can be re-selected
+    e.target.value = "";
+  }
 
   function applyTemplate(template: ScriptTemplate, mode: "replace" | "append") {
     if (mode === "replace") setDescription(template.content);
@@ -373,17 +390,51 @@ Call to action..."
 
           {activeTab === "media" && (
             <>
-              <label className="modal-label">Thumbnail URL</label>
+              <label className="modal-label">Thumbnail</label>
+              {/* hidden file input */}
               <input
-                className="modal-input"
-                placeholder="https://… or paste image URL"
-                value={thumbnailUrl}
-                onChange={(e) => setThumbnailUrl(e.target.value)}
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleImageUpload}
               />
+              <div className="modal-thumb-row">
+                <button
+                  className="kanban-btn-secondary modal-upload-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? (
+                    "Uploading…"
+                  ) : (
+                    <>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      Upload image
+                    </>
+                  )}
+                </button>
+                <span className="modal-thumb-or">or</span>
+                <input
+                  className="modal-input"
+                  placeholder="Paste image URL…"
+                  value={thumbnailUrl.startsWith("data:") ? "" : thumbnailUrl}
+                  onChange={(e) => setThumbnailUrl(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+              </div>
               {thumbnailUrl && (
-                <div className="modal-thumbnail-preview">
+                <div className="modal-thumbnail-preview" style={{ position: "relative" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={thumbnailUrl} alt="Thumbnail preview" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <button
+                    className="modal-thumb-clear"
+                    onClick={() => setThumbnailUrl("")}
+                    title="Remove thumbnail"
+                  >×</button>
                 </div>
               )}
 
