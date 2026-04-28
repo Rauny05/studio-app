@@ -378,15 +378,29 @@ function DeliverableCard({
   search,
   modified,
   onClick,
-  onToggleAdvance,
 }: {
   row: DeliverableRow;
   search: string;
   modified: boolean;
   onClick: () => void;
-  onToggleAdvance: () => void;
 }) {
   const status = STATUS_CONFIG[row.overallStatus];
+  const lsKey = `dl-adv-rcvd-${row.id}`;
+  const [advRcvd, setAdvRcvd] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const v = localStorage.getItem(lsKey);
+    return v === "true";
+  });
+
+  function toggleAdv(e: React.MouseEvent) {
+    e.stopPropagation();
+    setAdvRcvd((prev) => {
+      const next = !prev;
+      localStorage.setItem(lsKey, String(next));
+      return next;
+    });
+  }
+
   return (
     <div
       className="dl-card"
@@ -480,15 +494,15 @@ function DeliverableCard({
           </div>
         )}
 
-        {/* Advance received */}
+        {/* Advance received — independent of payment pipeline */}
         <button
           className="dl-advance-check"
-          data-checked={row.advance50}
-          onClick={(e) => { e.stopPropagation(); onToggleAdvance(); }}
-          title={row.advance50 ? "Advance received" : "Mark advance as received"}
+          data-checked={advRcvd}
+          onClick={toggleAdv}
+          title={advRcvd ? "Advance received ✓" : "Mark advance as received"}
         >
           <span className="dl-advance-box">
-            {row.advance50 && (
+            {advRcvd && (
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
@@ -821,11 +835,6 @@ export function DeliverablesView() {
               search={search}
               modified={!!overrides[row.id]}
               onClick={() => setSelectedId(row.id)}
-              onToggleAdvance={() => {
-                const next = !row.advance50;
-                const paymentStep = (row.payment100 ? 3 : next ? 2 : row.emailSent ? 1 : 0) as DeliverableRow["paymentStep"];
-                handleSave({ ...row, advance50: next, paymentStep });
-              }}
             />
           ))}
         </div>
