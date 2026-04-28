@@ -105,6 +105,11 @@ export function CloudSync() {
 
   // TRUE while reading from cloud — suppresses outbound pushes
   const isSyncingFromCloud = useRef(false);
+  // Set to true after the first cloud load completes — prevents pushing
+  // empty initial localStorage state before we know what's in Redis
+  const bootstrapped = useRef(false);
+  // Snapshot of last todos received FROM cloud — used to skip echo pushes
+  const cloudTodosSnapshot = useRef<string>("");
 
   useEffect(() => {
     // ── Push helpers (safe — guard against empty state) ────────────────────
@@ -118,8 +123,13 @@ export function CloudSync() {
 
     const todosDebounce = makeDebounced(() => {
       if (isSyncingFromCloud.current) return;
+      // Wait until we've loaded (or confirmed empty) from cloud
+      if (!bootstrapped.current) return;
       const { todos } = useTodoStore.getState();
-      if (!todos.length) return;
+      // Skip echo: if state exactly matches what we just received from cloud,
+      // there's nothing new to push (this happens when cloud setState triggers subscriber)
+      const snapshot = JSON.stringify(todos);
+      if (snapshot === cloudTodosSnapshot.current) return;
       pushSync("todos", { todos }).catch(() => {});
     }, 1500);
 
@@ -173,7 +183,10 @@ export function CloudSync() {
 
         if (todosEnv.status === "fulfilled" && todosEnv.value.data) {
           const d = todosEnv.value.data;
-          if (d.todos) useTodoStore.setState({ todos: d.todos });
+          if (d.todos) {
+            useTodoStore.setState({ todos: d.todos });
+            cloudTodosSnapshot.current = JSON.stringify(d.todos);
+          }
           cloudUpdatedAt.current.todos = todosEnv.value.updatedAt;
         }
 
@@ -200,6 +213,8 @@ export function CloudSync() {
         pvDebounce.cancel();
         cashDebounce.cancel();
         isSyncingFromCloud.current = false;
+        // Mark initial cloud load as done — debounces may now push user changes
+        bootstrapped.current = true;
       }
 
       // ── Bootstrap push: upload local data if Redis was empty ────────────
@@ -278,7 +293,10 @@ export function CloudSync() {
           todosEnv.value.updatedAt !== cloudUpdatedAt.current.todos
         ) {
           const d = todosEnv.value.data;
-          if (d.todos) useTodoStore.setState({ todos: d.todos });
+          if (d.todos) {
+            useTodoStore.setState({ todos: d.todos });
+            cloudTodosSnapshot.current = JSON.stringify(d.todos);
+          }
           cloudUpdatedAt.current.todos = todosEnv.value.updatedAt;
         }
 
@@ -311,10 +329,10 @@ export function CloudSync() {
           cloudUpdatedAt.current.cash = cashEnv.value.updatedAt;
         }
       } finally {
-        // Cancel debounces queued by setState above — those are cloud updates,
-        // not user changes, and we don't want to push them back
+        // Cancel kanban/pv/cash debounces triggered by cloud setState above —
+        // those are cloud echoes. Todos debounce is NOT cancelled here so that
+        // user deletions queued during the poll window are preserved.
         kanbanDebounce.cancel();
-        todosDebounce.cancel();
         pvDebounce.cancel();
         cashDebounce.cancel();
         isSyncingFromCloud.current = false;

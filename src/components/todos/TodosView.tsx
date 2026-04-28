@@ -247,12 +247,65 @@ function FlashCard({
 }) {
   const [flipped, setFlipped] = useState(false);
 
+  // ── Swipe to delete (mobile) ──────────────────────────────────────────────
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const [swipeX, setSwipeX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
+  const SWIPE_THRESHOLD = 90;
+
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    setSwiping(false);
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    // Only track mostly-horizontal swipes
+    if (!swiping && Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0) {
+      setSwiping(true);
+      setSwipeX(Math.max(dx, -160));
+      e.preventDefault();
+    }
+  }
+
+  function onTouchEnd() {
+    if (swipeX < -SWIPE_THRESHOLD && canEdit) {
+      setDismissing(true);
+      setTimeout(onDelete, 280);
+    } else {
+      setSwipeX(0);
+      setSwiping(false);
+    }
+  }
+
   const hasBack = !!(todo.description || todo.link);
 
   return (
     <div
+      className={`flashcard-swipe-wrapper ${dismissing ? "dismissing" : ""}`}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Red delete layer revealed on swipe */}
+      <div className="flashcard-swipe-delete" style={{ opacity: Math.min(Math.abs(swipeX) / SWIPE_THRESHOLD, 1) }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14H6L5 6" />
+          <path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+        </svg>
+        <span>Delete</span>
+      </div>
+
+    <div
       className={`flashcard-scene ${flipped ? "flipped" : ""} ${todo.completed ? "completed" : ""}`}
-      onClick={() => { if (hasBack) setFlipped((f) => !f); }}
+      style={swipeX !== 0 ? { transform: `translateX(${swipeX}px)`, transition: swiping ? "none" : "transform 0.25s ease" } : undefined}
+      onClick={() => { if (!swiping && hasBack) setFlipped((f) => !f); }}
       role="button"
       aria-label={flipped ? "Click to flip back" : "Click to flip for details"}
       tabIndex={0}
@@ -296,7 +349,7 @@ function FlashCard({
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                   </svg>
                 </button>
-                <button className="flashcard-action-btn danger" onClick={onDelete} title="Delete">
+                <button className="flashcard-action-btn danger" onClick={(e) => { e.stopPropagation(); if (confirm("Delete this todo?")) onDelete(); }} title="Delete">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6l-1 14H6L5 6" />
@@ -338,6 +391,7 @@ function FlashCard({
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
@@ -382,7 +436,6 @@ export function TodosView() {
   }
 
   function handleDelete(id: string) {
-    if (!confirm("Delete this todo?")) return;
     deleteTodo(id);
   }
 
