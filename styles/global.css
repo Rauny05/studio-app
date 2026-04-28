@@ -4059,6 +4059,55 @@ html[data-theme="light"] {
 html[data-theme="dark"] .dl-chip[data-done="true"] { color: #4ade80; background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); }
 html[data-theme="dark"] .dl-chip[data-done="false"] { color: #fbbf24; background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.22); }
 
+/* Collab chip override — purple accent, overrides done/pending colors */
+.dl-chip.dl-chip-collab {
+  background: rgba(124,58,237,0.12);
+  color: #7c3aed;
+  border-color: rgba(124,58,237,0.35);
+  font-weight: 600;
+}
+@media (prefers-color-scheme: dark) {
+  .dl-chip.dl-chip-collab { background: rgba(139,92,246,0.15); color: #a78bfa; border-color: rgba(139,92,246,0.35); }
+}
+html[data-theme="dark"] .dl-chip.dl-chip-collab { background: rgba(139,92,246,0.15); color: #a78bfa; border-color: rgba(139,92,246,0.35); }
+
+/* Collab pulse dot inside chip */
+.dl-chip-collab-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #7c3aed;
+  flex-shrink: 0;
+  animation: dl-collab-pulse 2s ease-in-out infinite;
+}
+@keyframes dl-collab-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.45; transform: scale(0.7); }
+}
+@media (prefers-color-scheme: dark) { .dl-chip-collab-dot { background: #a78bfa; } }
+html[data-theme="dark"] .dl-chip-collab-dot { background: #a78bfa; }
+
+/* Collab tag in card header */
+.dl-collab-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(124,58,237,0.13);
+  color: #7c3aed;
+  border: 1px solid rgba(124,58,237,0.3);
+  white-space: nowrap;
+}
+@media (prefers-color-scheme: dark) {
+  .dl-collab-tag { background: rgba(139,92,246,0.18); color: #a78bfa; border-color: rgba(139,92,246,0.35); }
+}
+html[data-theme="dark"] .dl-collab-tag { background: rgba(139,92,246,0.18); color: #a78bfa; border-color: rgba(139,92,246,0.35); }
+
 .dl-chip-dot {
   width: 5px;
   height: 5px;

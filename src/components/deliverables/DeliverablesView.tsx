@@ -385,6 +385,7 @@ function DeliverableCard({
   onClick: () => void;
 }) {
   const status = STATUS_CONFIG[row.overallStatus];
+  const hasCollab = row.deliverables.some((d) => /collab/i.test(d.label));
   const lsKey = `dl-adv-rcvd-${row.id}`;
   const [advRcvd, setAdvRcvd] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -420,6 +421,17 @@ function DeliverableCard({
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             {modified && <span className="dl-modified-dot" title="Locally modified" />}
+            {hasCollab && (
+              <span className="dl-collab-tag">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Collab
+              </span>
+            )}
             <span className="dl-status-pill" style={{ color: status.color, background: status.bg }}>
               {status.label}
             </span>
@@ -434,12 +446,14 @@ function DeliverableCard({
           <div className="dl-items">
             {row.deliverables.map((item, i) => {
               const done = item.status === "Completed";
+              const isCollab = /collab/i.test(item.label);
               return (
-                <span key={i} className="dl-chip" data-done={done}>
+                <span key={i} className={`dl-chip${isCollab ? " dl-chip-collab" : ""}`} data-done={done}>
                   <span className="dl-chip-dot" data-done={done} />
                   <span className="dl-chip-label">
                     <Highlight text={item.label} query={search} />
                   </span>
+                  {isCollab && <span className="dl-chip-collab-dot" />}
                 </span>
               );
             })}
