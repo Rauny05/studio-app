@@ -555,6 +555,7 @@ export function DeliverablesView() {
   const [filter, setFilter] = useState<FilterTab>("all");
   const [month, setMonth] = useState("all");
   const [talent, setTalent] = useState("all");
+  const [collabOnly, setCollabOnly] = useState(false);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [liveIndicator, setLiveIndicator] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -640,12 +641,18 @@ export function DeliverablesView() {
     return ["all", ...Array.from(seen).sort()];
   }, [displayData]);
 
+  const collabCount = useMemo(() =>
+    displayData.filter((r) => r.deliverables.some((d) => /collab/i.test(d.label))).length,
+    [displayData]
+  );
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return displayData.filter((row) => {
       if (filter !== "all" && row.overallStatus !== filter) return false;
       if (month !== "all" && row.month !== month) return false;
       if (talent !== "all" && row.pocName !== talent) return false;
+      if (collabOnly && !row.deliverables.some((d) => /collab/i.test(d.label))) return false;
       if (q) return (
         row.brand.toLowerCase().includes(q) ||
         row.pnNo.toLowerCase().includes(q) ||
@@ -655,7 +662,7 @@ export function DeliverablesView() {
       );
       return true;
     });
-  }, [displayData, filter, month, talent, search]);
+  }, [displayData, filter, month, talent, collabOnly, search]);
 
   function copyPaymentSummary() {
     const rows = filtered.filter((r) => r.overallStatus === "awaiting-payment");
@@ -734,6 +741,21 @@ export function DeliverablesView() {
               <span className="dl-stat-count">{counts[key]}</span>
             </button>
           ))}
+          {collabCount > 0 && (
+            <button
+              className={`dl-stat-pill dl-stat-pill-collab ${collabOnly ? "active" : ""}`}
+              onClick={() => setCollabOnly((v) => !v)}
+            >
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              Collab
+              <span className="dl-stat-count">{collabCount}</span>
+            </button>
+          )}
         </div>
       )}
 
