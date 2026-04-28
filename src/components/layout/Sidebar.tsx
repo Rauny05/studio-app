@@ -97,11 +97,9 @@ export function Sidebar() {
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
-          </svg>
+          <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: "-0.5px", lineHeight: 1 }}>RM</span>
         </div>
-        {!sidebarCollapsed && <span className="sidebar-logo-text">Studio</span>}
+        {!sidebarCollapsed && <span className="sidebar-logo-text">RM Studio</span>}
       </div>
 
       {/* Primary nav */}

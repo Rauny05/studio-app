@@ -108,7 +108,7 @@ export function Navbar() {
   const { boards } = useKanbanStore();
   let title = Object.entries(pageTitles).find(([key]) =>
     pathname === key || pathname.startsWith(key + "/")
-  )?.[1] ?? "Studio";
+  )?.[1] ?? "RM Studio";
 
   // Board detail page title — only after mount to avoid SSR mismatch
   if (mounted && pathname.startsWith("/projects/")) {

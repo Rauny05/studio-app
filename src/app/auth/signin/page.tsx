@@ -51,11 +51,9 @@ function SignInContent() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
-          </svg>
+          <span style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-1px", lineHeight: 1 }}>RM</span>
         </div>
-        <h1 className="auth-title">Studio</h1>
+        <h1 className="auth-title">RM Studio</h1>
         <p className="auth-subtitle">Sign in to access your workspace</p>
 
         {error && (

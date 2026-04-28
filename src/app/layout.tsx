@@ -3,8 +3,8 @@ import "../../styles/global.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Studio",
-  description: "Creative studio workspace",
+  title: "RM Studio",
+  description: "RM Studio workspace",
   manifest: '/manifest.json',
   themeColor: '#7c3aed',
   appleWebApp: {

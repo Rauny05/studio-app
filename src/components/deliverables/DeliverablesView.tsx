@@ -7,10 +7,10 @@ import { usePermission } from "@/hooks/use-permission";
 const POLL_INTERVAL = 30_000;
 
 const STATUS_CONFIG = {
-  pending:           { label: "Pending",         color: "#737373", bg: "rgba(115,115,115,0.1)" },
-  "in-progress":     { label: "In Progress",     color: "#f59e0b", bg: "rgba(245,158,11,0.1)"  },
-  "awaiting-payment":{ label: "Awaiting Payment",color: "#3b82f6", bg: "rgba(59,130,246,0.1)"  },
-  done:              { label: "Done",            color: "#22c55e", bg: "rgba(34,197,94,0.1)"   },
+  pending:           { label: "Pending",          stripeColor: "#737373" },
+  "in-progress":     { label: "In Progress",      stripeColor: "#f59e0b" },
+  "awaiting-payment":{ label: "Awaiting Payment", stripeColor: "#3b82f6" },
+  done:              { label: "Done",             stripeColor: "#22c55e" },
 };
 
 const PAYMENT_STEPS = ["Email", "50%", "Paid"];
@@ -147,10 +147,10 @@ function DeliverableModal({
         <div className="dl-modal-header">
           <div className="dl-modal-header-left">
             <span className="dl-pn-badge">
-              <span className="dl-pn-dot" style={{ background: status.color }} />
+              <span className="dl-pn-dot" data-status={local.overallStatus} />
               {local.pnNo.toUpperCase()}
             </span>
-            <span className="dl-status-pill" style={{ color: status.color, background: status.bg }}>
+            <span className="dl-status-pill" data-status={local.overallStatus}>
               {status.label}
             </span>
             {readOnly && (
@@ -412,11 +412,11 @@ function DeliverableCard({
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick(); }}
     >
-      <div className="dl-card-stripe" style={{ background: status.color }} />
+      <div className="dl-card-stripe" data-status={row.overallStatus} />
       <div className="dl-card-inner">
         <div className="dl-card-header">
           <span className="dl-pn-badge">
-            <span className="dl-pn-dot" />
+            <span className="dl-pn-dot" data-status={row.overallStatus} />
             <Highlight text={row.pnNo.toUpperCase()} query={search} />
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -432,7 +432,7 @@ function DeliverableCard({
                 Collab
               </span>
             )}
-            <span className="dl-status-pill" style={{ color: status.color, background: status.bg }}>
+            <span className="dl-status-pill" data-status={row.overallStatus}>
               {status.label}
             </span>
           </div>
@@ -733,10 +733,10 @@ export function DeliverablesView() {
           {(Object.entries(STATUS_CONFIG) as [keyof typeof STATUS_CONFIG, typeof STATUS_CONFIG[keyof typeof STATUS_CONFIG]][]).map(([key, cfg]) => (
             <button key={key}
               className={`dl-stat-pill ${filter === key ? "active" : ""}`}
-              style={filter === key ? { borderColor: cfg.color, color: cfg.color } : {}}
+              data-status={key}
               onClick={() => setFilter(filter === key ? "all" : key as FilterTab)}
             >
-              <span className="dl-stat-dot" style={{ background: cfg.color }} />
+              <span className="dl-stat-dot" data-status={key} />
               {cfg.label}
               <span className="dl-stat-count">{counts[key]}</span>
             </button>
