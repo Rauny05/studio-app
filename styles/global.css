@@ -4149,6 +4149,49 @@ html[data-theme="dark"] .dl-chip[data-done="false"] { color: #fbbf24; background
 
 .dl-payment-line[data-active="true"] { background: #22c55e; }
 
+/* Advance received checkbox */
+.dl-advance-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.dl-advance-box {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  border: 1.5px solid var(--app-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+  background: transparent;
+}
+.dl-advance-check[data-checked="true"] .dl-advance-box {
+  background: #22c55e;
+  border-color: #22c55e;
+}
+.dl-advance-label {
+  font-size: 11px;
+  color: var(--app-text-muted);
+  transition: color 0.15s;
+  letter-spacing: 0.01em;
+}
+.dl-advance-check[data-checked="true"] .dl-advance-label {
+  color: #22c55e;
+}
+.dl-advance-check:hover .dl-advance-box {
+  border-color: #22c55e;
+}
+.dl-advance-check:hover .dl-advance-label {
+  color: var(--app-text-secondary);
+}
+
 /* Meta */
 .dl-meta {
   display: flex;
