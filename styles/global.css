@@ -5901,121 +5901,116 @@ html[data-theme="light"] [data-status="done"]            { --s-color: #15803d; -
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SCHEDULE STACK ROW — Reel Schedule + To Shoot side-by-side
+   TO SHOOT — full-width widget with card-per-item design
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.schedule-stack-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 0;
-}
-
-/* ── To Shoot widget ─────────────────────────────────────────────── */
-
-/* ── To Shoot widget — full redesign ──────────────────────────────────────── */
-
 .shoot-widget {
-  background: linear-gradient(135deg, rgba(16,185,129,0.07) 0%, rgba(6,182,212,0.04) 100%);
-  border: 1px solid rgba(16,185,129,0.22);
+  background: var(--app-card);
+  border: 1px solid var(--app-border);
   border-radius: 16px;
-  padding: 18px 18px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  min-height: 0;
+  padding: 20px 22px 16px;
 }
 
+/* Header */
 .shoot-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-.shoot-header-left {
-  display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
-.shoot-icon { font-size: 20px; line-height: 1; }
+.shoot-header-left { display: flex; align-items: center; gap: 12px; }
+.shoot-icon { font-size: 22px; line-height: 1; }
 .shoot-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 800;
   color: var(--app-text);
   margin: 0;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
 }
 .shoot-sub {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--app-text-muted);
-  margin: 2px 0 0;
+  margin: 3px 0 0;
+  font-weight: 400;
 }
 
+/* Item grid — 2 columns on wide screens */
 .shoot-list {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
 }
 
-/* Each item row */
+/* ── Each item is a proper card ── */
 .shoot-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 8px;
+  gap: 12px;
+  padding: 14px 14px 14px 18px;
+  background: var(--app-elevated);
+  border: 1px solid var(--app-border);
+  border-left: 3px solid #10b981;
   border-radius: 10px;
-  border: 1px solid transparent;
-  transition: background 120ms, border-color 120ms;
+  transition: border-color 150ms, box-shadow 150ms, background 150ms;
   cursor: default;
+  min-height: 60px;
 }
 .shoot-item:hover {
-  background: rgba(16,185,129,0.06);
-  border-color: rgba(16,185,129,0.15);
+  border-color: #10b981;
+  box-shadow: 0 2px 12px rgba(16,185,129,0.12);
 }
-.shoot-item-done { opacity: 0.5; }
-.shoot-item-done:hover { background: var(--app-elevated); border-color: var(--app-border); }
+.shoot-item-done {
+  border-left-color: var(--app-border);
+  opacity: 0.5;
+}
+.shoot-item-done:hover {
+  border-color: var(--app-border);
+  box-shadow: none;
+}
 
-/* Check button */
+/* Check circle */
 .shoot-check {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  border: 1.5px solid var(--app-border);
+  border: 2px solid var(--app-border);
   background: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 130ms;
+  transition: all 140ms;
   color: var(--app-text-muted);
 }
-.shoot-check:hover { border-color: #10b981; color: #10b981; background: rgba(16,185,129,0.08); }
+.shoot-check:hover { border-color: #10b981; color: #10b981; background: rgba(16,185,129,0.09); }
 .shoot-check-done { border-color: #10b981; background: #10b981; color: #fff; }
-.shoot-check-done:hover { background: rgba(16,185,129,0.75); }
+.shoot-check-done:hover { opacity: 0.8; }
 
-/* Index number */
+/* Index badge */
 .shoot-idx {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   color: #10b981;
-  opacity: 0.7;
-  min-width: 14px;
-  text-align: center;
+  background: rgba(16,185,129,0.12);
+  border-radius: 5px;
+  padding: 2px 6px;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
 
-/* Title text — big and readable */
+/* Main text */
 .shoot-text {
   flex: 1;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--app-text);
-  line-height: 1.25;
-  letter-spacing: -0.2px;
+  line-height: 1.35;
+  letter-spacing: -0.25px;
   cursor: pointer;
+  word-break: break-word;
 }
 .shoot-text:hover { color: #10b981; }
 .shoot-item-done .shoot-text {
@@ -6025,35 +6020,36 @@ html[data-theme="light"] [data-status="done"]            { --s-color: #15803d; -
   cursor: default;
 }
 
-/* Inline edit input */
+/* Inline edit */
 .shoot-edit-input {
   flex: 1;
-  background: rgba(16,185,129,0.08);
-  border: 1.5px solid rgba(16,185,129,0.4);
-  border-radius: 7px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #10b981;
+  border-radius: 0;
   outline: none;
-  padding: 4px 9px;
-  font-size: 14.5px;
+  padding: 2px 0;
+  font-size: 15px;
   font-weight: 600;
   color: var(--app-text);
-  letter-spacing: -0.2px;
+  letter-spacing: -0.25px;
 }
 
-/* Action buttons (edit + remove) — show on hover */
+/* Action buttons — visible on hover */
 .shoot-item-actions {
   display: flex;
   align-items: center;
   gap: 2px;
   opacity: 0;
-  transition: opacity 120ms;
+  transition: opacity 130ms;
   flex-shrink: 0;
 }
 .shoot-item:hover .shoot-item-actions { opacity: 1; }
 
 .shoot-action-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   border: none;
   background: none;
   color: var(--app-text-muted);
@@ -6063,74 +6059,87 @@ html[data-theme="light"] [data-status="done"]            { --s-color: #15803d; -
   justify-content: center;
   transition: background 100ms, color 100ms;
 }
-.shoot-action-btn:hover { background: var(--app-elevated); color: var(--app-text); }
+.shoot-action-btn:hover { background: var(--app-card); color: var(--app-text); }
 .shoot-action-remove:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
 
+/* Empty state */
 .shoot-empty {
-  font-size: 13px;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
   color: var(--app-text-muted);
-  font-style: italic;
-  padding: 8px 8px 10px;
+  font-size: 13px;
+  gap: 0;
 }
 
-/* Add row at bottom */
+/* Add row — spans full width below the grid */
 .shoot-add-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 8px;
-  margin-top: 4px;
-  border-top: 1px solid var(--app-border-subtle);
+  gap: 10px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  border: 1.5px dashed var(--app-border);
+  border-radius: 10px;
+  transition: border-color 150ms, background 150ms;
+  cursor: text;
+}
+.shoot-add-row:focus-within {
+  border-color: rgba(16,185,129,0.5);
+  background: rgba(16,185,129,0.03);
 }
 .shoot-input {
   flex: 1;
   background: none;
   border: none;
   outline: none;
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 500;
   color: var(--app-text);
   padding: 0;
 }
-.shoot-input::placeholder { color: var(--app-text-muted); font-weight: 400; }
+.shoot-input::placeholder { color: var(--app-text-muted); }
 .shoot-add-btn {
-  padding: 4px 11px;
+  padding: 5px 14px;
   border-radius: 7px;
-  border: 1px solid rgba(16,185,129,0.4);
-  background: rgba(16,185,129,0.1);
-  color: #10b981;
-  font-size: 12px;
+  border: none;
+  background: #10b981;
+  color: #fff;
+  font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: background 120ms;
+  transition: opacity 120ms;
   white-space: nowrap;
+  flex-shrink: 0;
 }
-.shoot-add-btn:hover { background: rgba(16,185,129,0.18); }
+.shoot-add-btn:hover { opacity: 0.85; }
 
 /* Done section */
-.shoot-done-section { margin-top: 8px; }
+.shoot-done-section { margin-top: 12px; }
 .shoot-done-summary {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 12px;
+  font-weight: 600;
   color: var(--app-text-muted);
   cursor: pointer;
   list-style: none;
-  padding: 4px 4px;
-  border-radius: 6px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--app-border);
   transition: background 100ms;
 }
 .shoot-done-summary:hover { background: var(--app-elevated); }
 .shoot-done-summary::-webkit-details-marker { display: none; }
-.shoot-done-list { margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
-
-/* ── Mobile: stack vertically ──────────────────────────────────── */
-@media (max-width: 700px) {
-  .schedule-stack-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
+.shoot-done-list {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 6px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

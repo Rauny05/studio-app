@@ -416,7 +416,13 @@ function ToShoot() {
         ))}
 
         {active.length === 0 && draft === "" && (
-          <p className="shoot-empty">No ideas queued — add your first below</p>
+          <div className="shoot-empty">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.25, marginBottom: 8 }}>
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+            <span>Add your first shoot idea below</span>
+          </div>
         )}
 
         {/* Inline add row */}
@@ -1125,11 +1131,11 @@ export function DashboardView() {
 
   return (
     <div className="dashboard-page">
-      {/* Reel Schedule + To Shoot — side by side card stacks */}
-      <div className="schedule-stack-row">
-        <TodayReels />
-        <ToShoot />
-      </div>
+      {/* Reel Schedule — full width */}
+      <TodayReels />
+
+      {/* To Shoot — full width below */}
+      <ToShoot />
 
       {/* Priority Videos */}
       <PriorityVideos />
