@@ -273,6 +273,86 @@ function DeliverablesSummary() {
 
 interface ShootItem { id: string; text: string; done: boolean }
 
+function ShootItemRow({
+  item,
+  idx,
+  onToggle,
+  onRename,
+  onRemove,
+}: {
+  item: ShootItem;
+  idx: number;
+  onToggle: () => void;
+  onRename: (text: string) => void;
+  onRemove: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(item.text);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function startEdit() {
+    setDraft(item.text);
+    setEditing(true);
+    setTimeout(() => { inputRef.current?.focus(); inputRef.current?.select(); }, 0);
+  }
+
+  function commit() {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== item.text) onRename(trimmed);
+    setEditing(false);
+  }
+
+  return (
+    <div className={`shoot-item ${item.done ? "shoot-item-done" : ""}`}>
+      <button className={`shoot-check ${item.done ? "shoot-check-done" : ""}`} onClick={onToggle} title={item.done ? "Restore" : "Mark as shot"}>
+        {item.done ? (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        ) : (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="12" cy="12" r="9" />
+          </svg>
+        )}
+      </button>
+
+      <span className="shoot-idx">{idx + 1}</span>
+
+      {editing ? (
+        <input
+          ref={inputRef}
+          className="shoot-edit-input"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") setEditing(false);
+          }}
+        />
+      ) : (
+        <span className="shoot-text" onClick={startEdit} title="Click to edit">{item.text}</span>
+      )}
+
+      {!editing && (
+        <div className="shoot-item-actions">
+          <button className="shoot-action-btn" onClick={startEdit} title="Edit">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          <button className="shoot-action-btn shoot-action-remove" onClick={onRemove} title="Remove">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ToShoot() {
   const [items, setItems] = useState<ShootItem[]>(() => {
     if (typeof window === "undefined") return [];
@@ -298,6 +378,10 @@ function ToShoot() {
     persist(items.map((it) => it.id === id ? { ...it, done: !it.done } : it));
   }
 
+  function rename(id: string, text: string) {
+    persist(items.map((it) => it.id === id ? { ...it, text } : it));
+  }
+
   function remove(id: string) {
     persist(items.filter((it) => it.id !== id));
   }
@@ -320,29 +404,24 @@ function ToShoot() {
       </div>
 
       <div className="shoot-list">
-        {active.map((it) => (
-          <div key={it.id} className="shoot-item">
-            <button className="shoot-check" onClick={() => toggle(it.id)} title="Mark as shot">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <circle cx="12" cy="12" r="9" />
-              </svg>
-            </button>
-            <span className="shoot-text">{it.text}</span>
-            <button className="shoot-remove" onClick={() => remove(it.id)} title="Remove">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
+        {active.map((it, idx) => (
+          <ShootItemRow
+            key={it.id}
+            item={it}
+            idx={idx}
+            onToggle={() => toggle(it.id)}
+            onRename={(text) => rename(it.id, text)}
+            onRemove={() => remove(it.id)}
+          />
         ))}
 
         {active.length === 0 && draft === "" && (
-          <p className="shoot-empty">Tap below to add your first idea</p>
+          <p className="shoot-empty">No ideas queued — add your first below</p>
         )}
 
-        {/* Inline add */}
+        {/* Inline add row */}
         <div className="shoot-add-row">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0, opacity: 0.4 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0, opacity: 0.4 }}>
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           <input
@@ -368,20 +447,15 @@ function ToShoot() {
             {done.length} shot
           </summary>
           <div className="shoot-done-list">
-            {done.map((it) => (
-              <div key={it.id} className="shoot-item shoot-item-done">
-                <button className="shoot-check shoot-check-done" onClick={() => toggle(it.id)} title="Restore">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </button>
-                <span className="shoot-text">{it.text}</span>
-                <button className="shoot-remove" onClick={() => remove(it.id)}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
+            {done.map((it, idx) => (
+              <ShootItemRow
+                key={it.id}
+                item={it}
+                idx={idx}
+                onToggle={() => toggle(it.id)}
+                onRename={(text) => rename(it.id, text)}
+                onRemove={() => remove(it.id)}
+              />
             ))}
           </div>
         </details>
