@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { dataGet, dataSet } from "@/lib/data-store";
 
-const ALLOWED_KEYS = new Set(["kanban", "todos", "reels", "priority-videos", "cash", "deliverable-overrides"]);
+const ALLOWED_KEYS = new Set(["kanban", "todos", "reels", "priority-videos", "cash", "deliverable-overrides", "deliverable-local-rows"]);
 
 interface SyncEnvelope<T = unknown> {
   data: T;

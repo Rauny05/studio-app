@@ -41,6 +41,295 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function generatePnNo(existingRows: DeliverableRow[]): string {
+  const now = new Date();
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const mon = months[now.getMonth()];
+  const yr  = String(now.getFullYear()).slice(-2);
+  const prefix = `${mon}${yr}-`;
+  const taken = new Set(
+    existingRows
+      .filter((r) => r.pnNo.toUpperCase().startsWith(prefix))
+      .map((r) => parseInt(r.pnNo.split("-")[1] ?? "0", 10))
+      .filter((n) => !isNaN(n))
+  );
+  let n = 1;
+  while (taken.has(n)) n++;
+  return `${prefix}${String(n).padStart(2, "0")}`;
+}
+
+// ── Create Deliverable Modal ──────────────────────────────────────────────────
+
+function CreateDeliverableModal({
+  allRows,
+  onClose,
+  onCreate,
+}: {
+  allRows: DeliverableRow[];
+  onClose: () => void;
+  onCreate: (row: DeliverableRow) => Promise<void>;
+}) {
+  const suggestedPn = useMemo(() => generatePnNo(allRows), [allRows]);
+  const [pnNo,       setPnNo]       = useState(suggestedPn);
+  const [brand,      setBrand]      = useState("");
+  const [pocName,    setPocName]    = useState("");
+  const [pocCompany, setPocCompany] = useState("");
+  const [note,       setNote]       = useState("");
+  const [deliverables, setDeliverables] = useState<DeliverableItem[]>([]);
+  const [paymentStep,  setPaymentStep]  = useState<DeliverableRow["paymentStep"]>(0);
+  const [newDel, setNewDel] = useState("");
+  const [saving, setSaving] = useState(false);
+  const newDelRef = useRef<HTMLInputElement>(null);
+  const brandRef  = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    brandRef.current?.focus();
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function addDeliverable() {
+    const label = newDel.trim();
+    if (!label) return;
+    setDeliverables((prev) => [...prev, { label, status: "Pending" }]);
+    setNewDel("");
+    newDelRef.current?.focus();
+  }
+
+  function toggleDel(i: number) {
+    setDeliverables((prev) =>
+      prev.map((d, idx) =>
+        idx === i ? { ...d, status: d.status === "Completed" ? "Pending" : "Completed" } : d
+      )
+    );
+  }
+
+  function removeDel(i: number) {
+    setDeliverables((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  function togglePaymentStep(step: number) {
+    setPaymentStep((prev) => (prev === step + 1 ? step : step + 1) as DeliverableRow["paymentStep"]);
+  }
+
+  const overallStatus = computeStatus(deliverables, paymentStep >= 3);
+
+  async function handleCreate() {
+    if (!brand.trim()) { brandRef.current?.focus(); return; }
+    setSaving(true);
+    const row: DeliverableRow = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+      pnNo: pnNo.trim() || suggestedPn,
+      brand: brand.trim(),
+      deliverables,
+      poc: pocName.trim(),
+      pocName: pocName.trim(),
+      pocCompany: pocCompany.trim(),
+      emailSent:  paymentStep >= 1,
+      advance50:  paymentStep >= 2,
+      payment100: paymentStep >= 3,
+      invoiceNumber: "",
+      note: note.trim(),
+      paymentStep,
+      overallStatus,
+      month: (() => {
+        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        const d = new Date();
+        return `${months[d.getMonth()]} ${d.getFullYear()}`;
+      })(),
+    };
+    try {
+      await onCreate(row);
+      onClose();
+    } catch {
+      setSaving(false);
+    }
+  }
+
+  const canSave = brand.trim().length > 0;
+
+  return (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="dl-modal-panel dl-create-panel">
+
+        {/* Header */}
+        <div className="dl-modal-header">
+          <div className="dl-modal-header-left" style={{ gap: 8 }}>
+            {/* Editable PN badge */}
+            <span className="dl-pn-badge" style={{ cursor: "text" }}>
+              <span className="dl-pn-dot" data-status={overallStatus} />
+              <input
+                className="dl-create-pn-input"
+                value={pnNo}
+                onChange={(e) => setPnNo(e.target.value.toUpperCase())}
+                placeholder={suggestedPn}
+                title="Edit project number"
+              />
+            </span>
+            <span className="dl-status-pill" data-status={overallStatus}>
+              {STATUS_CONFIG[overallStatus].label}
+            </span>
+            <span className="dl-create-new-badge">New card</span>
+          </div>
+          <button className="kanban-icon-btn" onClick={onClose} aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="dl-modal-body">
+
+          {/* Brand name — most important field */}
+          <input
+            ref={brandRef}
+            className="dl-create-brand-input"
+            placeholder="Brand / client name…"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") newDelRef.current?.focus(); }}
+          />
+
+          {/* POC row */}
+          <div className="dl-create-poc-row">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4, flexShrink: 0 }}>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+            </svg>
+            <input
+              className="dl-create-poc-input"
+              placeholder="POC name…"
+              value={pocName}
+              onChange={(e) => setPocName(e.target.value)}
+            />
+            <span className="dl-create-poc-sep">·</span>
+            <input
+              className="dl-create-poc-input"
+              placeholder="Company / agency…"
+              value={pocCompany}
+              onChange={(e) => setPocCompany(e.target.value)}
+            />
+          </div>
+
+          {/* Deliverables */}
+          <div className="dl-modal-section">
+            <div className="dl-modal-section-title">
+              Deliverables
+              <span className="dl-modal-section-hint">
+                {deliverables.length === 0 ? "Tap chip to mark done" : deliverables.every((d) => d.status === "Completed") ? "✓ All done" : "Tap to mark done"}
+              </span>
+            </div>
+            <div className="dl-modal-chips">
+              {deliverables.map((item, i) => {
+                const done = item.status === "Completed";
+                return (
+                  <button
+                    key={i}
+                    className={`dl-modal-chip ${done ? "done" : "pending"}`}
+                    onClick={() => toggleDel(i)}
+                    title={done ? "Mark as pending" : "Mark as done"}
+                  >
+                    <span className="dl-chip-dot" data-done={done} />
+                    {item.label}
+                    {done ? (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" opacity={0.5}>
+                        <circle cx="12" cy="12" r="9" />
+                      </svg>
+                    )}
+                    <span
+                      className="dl-chip-remove"
+                      role="button"
+                      aria-label="Remove"
+                      onClick={(e) => { e.stopPropagation(); removeDel(i); }}
+                    >×</span>
+                  </button>
+                );
+              })}
+
+              {/* Ghost chip input */}
+              <div className="dl-chip-ghost-wrap">
+                <input
+                  ref={newDelRef}
+                  className="dl-chip-ghost-input"
+                  placeholder="+ Add deliverable…"
+                  value={newDel}
+                  onChange={(e) => setNewDel(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") addDeliverable();
+                    if (e.key === "Escape") setNewDel("");
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Payment */}
+          <div className="dl-modal-section">
+            <div className="dl-modal-section-title">
+              Payment
+              <span className="dl-modal-section-hint">Tap to advance</span>
+            </div>
+            <div className="dl-payment" style={{ gap: 4 }}>
+              {PAYMENT_STEPS.map((step, i) => (
+                <div key={step} className="dl-payment-step">
+                  <button
+                    className="dl-modal-payment-btn"
+                    style={i < paymentStep ? { background: "#22c55e", borderColor: "#22c55e" } : {}}
+                    onClick={() => togglePaymentStep(i)}
+                    title={`Toggle: ${step}`}
+                  >
+                    {i < paymentStep && (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="dl-payment-label" data-active={i < paymentStep}>{step}</span>
+                  {i < PAYMENT_STEPS.length - 1 && (
+                    <div className="dl-payment-line" data-active={i + 1 <= paymentStep} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="dl-modal-section">
+            <div className="dl-modal-section-title">Notes</div>
+            <textarea
+              className="dl-modal-notes-input"
+              placeholder="Add notes, deliverable specs, shoot details…"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="dl-modal-footer">
+          <button className="kanban-btn-secondary" onClick={onClose}>Cancel</button>
+          <button
+            className="kanban-btn-primary"
+            disabled={!canSave || saving}
+            onClick={handleCreate}
+            style={{ minWidth: 120 }}
+          >
+            {saving ? "Saving…" : "Save card"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Deliverable Modal ─────────────────────────────────────────────────────────
 function DeliverableModal({
   row,
@@ -373,11 +662,13 @@ function DeliverableCard({
   row,
   search,
   modified,
+  isLocal = false,
   onClick,
 }: {
   row: DeliverableRow;
   search: string;
   modified: boolean;
+  isLocal?: boolean;
   onClick: () => void;
 }) {
   const status = STATUS_CONFIG[row.overallStatus];
@@ -416,7 +707,8 @@ function DeliverableCard({
             <Highlight text={row.pnNo.toUpperCase()} query={search} />
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            {modified && <span className="dl-modified-dot" title="Locally modified" />}
+            {isLocal && <span className="dl-local-badge" title="Locally created card">Local</span>}
+            {modified && !isLocal && <span className="dl-modified-dot" title="Locally modified" />}
             {hasCollab && (
               <span className="dl-collab-tag">
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -544,6 +836,7 @@ export function DeliverablesView() {
   const canEdit = permission === "edit";
   const [data, setData] = useState<DeliverableRow[]>([]);
   const [overrides, setOverrides] = useState<Record<string, DeliverableRow>>({});
+  const [localRows, setLocalRows] = useState<DeliverableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -555,23 +848,27 @@ export function DeliverablesView() {
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [liveIndicator, setLiveIndicator] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "ok">("idle");
   const searchRef = useRef<HTMLInputElement>(null);
   const prevDataRef = useRef<string>("");
 
-  // Merge overrides into data for display
-  const displayData = useMemo(() =>
-    data.map((row) => overrides[row.id] ?? row),
-    [data, overrides]
-  );
+  // Merge overrides + localRows into data for display
+  const displayData = useMemo(() => {
+    const sheetRows = data.map((row) => overrides[row.id] ?? row);
+    // Apply overrides to local rows too, prepend them so they appear first
+    const localWithOverrides = localRows.map((row) => overrides[row.id] ?? row);
+    return [...localWithOverrides, ...sheetRows];
+  }, [data, overrides, localRows]);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true); else setSyncing(true);
     setError(null);
     try {
-      const [sheetRes, overridesEnv] = await Promise.all([
+      const [sheetRes, overridesEnv, localRowsEnv] = await Promise.all([
         fetch("/api/deliverables", { cache: "no-store" }),
         fetch("/api/sync/deliverable-overrides", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null),
+        fetch("/api/sync/deliverable-local-rows", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null),
       ]);
       const json = await sheetRes.json();
 
@@ -596,6 +893,11 @@ export function DeliverablesView() {
       // Overlay server-side overrides so all users see the same saved state
       if (overridesEnv?.data && typeof overridesEnv.data === "object") {
         setOverrides(overridesEnv.data as Record<string, DeliverableRow>);
+      }
+
+      // Load locally-created rows
+      if (Array.isArray(localRowsEnv?.data)) {
+        setLocalRows(localRowsEnv.data as DeliverableRow[]);
       }
 
       setLastFetched(new Date());
@@ -694,6 +996,16 @@ export function DeliverablesView() {
     });
   }
 
+  async function handleCreate(row: DeliverableRow) {
+    const next = [row, ...localRows];
+    setLocalRows(next);
+    await fetch("/api/sync/deliverable-local-rows", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    });
+  }
+
   return (
     <div className="dl-page" style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
 
@@ -713,14 +1025,24 @@ export function DeliverablesView() {
             )}
           </p>
         </div>
-        <button className="kanban-btn-secondary dl-refresh-btn" onClick={() => load(false)} disabled={loading || syncing}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-            style={{ animation: (loading || syncing) ? "dl-spin 0.8s linear infinite" : "none" }}>
-            <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-          {syncing ? "Syncing…" : "Refresh"}
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {canEdit && (
+            <button className="dl-new-card-btn" onClick={() => setShowCreate(true)}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              New card
+            </button>
+          )}
+          <button className="kanban-btn-secondary dl-refresh-btn" onClick={() => load(false)} disabled={loading || syncing}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+              style={{ animation: (loading || syncing) ? "dl-spin 0.8s linear infinite" : "none" }}>
+              <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            {syncing ? "Syncing…" : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {/* Status strip */}
@@ -850,11 +1172,16 @@ export function DeliverablesView() {
           )}
         </div>
       )}
-      {!loading && !error && filtered.length === 0 && (
+      {!loading && !error && filtered.length === 0 && localRows.length === 0 && (
         <div className="dl-empty">
           <div className="dl-empty-icon">📋</div>
           <h3>No deliverables found</h3>
           <p>{search || filter !== "all" ? "Try adjusting your filters" : "No data in the sheet"}</p>
+          {canEdit && (
+            <button className="kanban-btn-primary" style={{ marginTop: 12 }} onClick={() => setShowCreate(true)}>
+              + Add your first card
+            </button>
+          )}
         </div>
       )}
 
@@ -866,10 +1193,19 @@ export function DeliverablesView() {
               row={row}
               search={search}
               modified={!!overrides[row.id]}
+              isLocal={row.id.startsWith("local-")}
               onClick={() => setSelectedId(row.id)}
             />
           ))}
         </div>
+      )}
+
+      {showCreate && (
+        <CreateDeliverableModal
+          allRows={displayData}
+          onClose={() => setShowCreate(false)}
+          onCreate={handleCreate}
+        />
       )}
 
       {selectedRow && (

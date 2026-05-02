@@ -5688,6 +5688,106 @@ html[data-theme="light"] [data-status="done"]            { --s-color: #15803d; -
 }
 .dl-modal-save-btn:hover { opacity: 0.85; }
 
+/* ── New card button ───────────────────────────────────────────────────────── */
+.dl-new-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(124,58,237,0.35);
+  background: rgba(124,58,237,0.08);
+  color: #7c3aed;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+  white-space: nowrap;
+}
+.dl-new-card-btn:hover { background: rgba(124,58,237,0.14); border-color: rgba(124,58,237,0.55); }
+
+/* ── Local badge on card ───────────────────────────────────────────────────── */
+.dl-local-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7c3aed;
+  background: rgba(124,58,237,0.1);
+  border: 1px solid rgba(124,58,237,0.25);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* ── Create modal — extra field styles ─────────────────────────────────────── */
+.dl-create-panel { max-height: 90vh; }
+
+.dl-create-pn-input {
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text);
+  width: 90px;
+  cursor: text;
+}
+.dl-create-pn-input::placeholder { color: var(--app-text-muted); }
+
+.dl-create-new-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #7c3aed;
+  background: rgba(124,58,237,0.1);
+  border: 1px solid rgba(124,58,237,0.25);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+.dl-create-brand-input {
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1.5px solid var(--app-border);
+  outline: none;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--app-text);
+  letter-spacing: -0.4px;
+  padding: 4px 0 8px;
+  margin-bottom: 10px;
+  transition: border-color 150ms;
+}
+.dl-create-brand-input:focus { border-color: var(--app-text-muted); }
+.dl-create-brand-input::placeholder { color: var(--app-text-muted); font-weight: 400; }
+
+.dl-create-poc-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.dl-create-poc-input {
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 12.5px;
+  color: var(--app-text-secondary);
+  flex: 1;
+  min-width: 0;
+}
+.dl-create-poc-input::placeholder { color: var(--app-text-muted); }
+.dl-create-poc-sep {
+  color: var(--app-text-muted);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
 /* Modified dot on deliverable card */
 .dl-modified-dot {
   display: inline-block;
