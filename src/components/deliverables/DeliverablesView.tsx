@@ -15,6 +15,18 @@ const STATUS_CONFIG = {
 
 const PAYMENT_STEPS = ["Email", "50%", "Paid"];
 
+// Hardcoded agency chips — order is display order
+const AGENCY_CHIPS = ["LWT", "Momentum", "Jonathan/Pianosa", "Sociowash", "Socialcurrent"];
+
+// Match a row against an agency chip label — checks pocName AND pocCompany,
+// splits "Jonathan/Pianosa" into ["jonathan","pianosa"] and tests each part
+function matchesAgency(row: DeliverableRow, agency: string): boolean {
+  const parts = agency.toLowerCase().split("/").map((p) => p.trim());
+  const n = row.pocName.toLowerCase();
+  const c = row.pocCompany.toLowerCase();
+  return parts.some((p) => n.includes(p) || c.includes(p));
+}
+
 function computeStatus(
   deliverables: DeliverableItem[],
   payment100: boolean
@@ -844,6 +856,7 @@ export function DeliverablesView() {
   const [filter, setFilter] = useState<FilterTab>("all");
   const [month, setMonth] = useState("all");
   const [talent, setTalent] = useState("all");
+  const [agencyFilter, setAgencyFilter] = useState("");
   const [collabOnly, setCollabOnly] = useState(false);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [liveIndicator, setLiveIndicator] = useState(false);
@@ -944,17 +957,11 @@ export function DeliverablesView() {
     [displayData]
   );
 
-  // Top 5 most-worked-with agencies/POCs for quick-filter chips
-  const topAgencies = useMemo(() => {
-    const counts: Record<string, { name: string; company: string; count: number }> = {};
-    displayData.forEach((r) => {
-      if (!r.pocName) return;
-      if (!counts[r.pocName]) counts[r.pocName] = { name: r.pocName, company: r.pocCompany, count: 0 };
-      counts[r.pocName].count++;
-    });
-    return Object.values(counts)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+  // Count how many cards match each hardcoded agency chip
+  const agencyCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    AGENCY_CHIPS.forEach((a) => { c[a] = displayData.filter((r) => matchesAgency(r, a)).length; });
+    return c;
   }, [displayData]);
 
   const filtered = useMemo(() => {
@@ -963,6 +970,7 @@ export function DeliverablesView() {
       if (filter !== "all" && row.overallStatus !== filter) return false;
       if (month !== "all" && row.month !== month) return false;
       if (talent !== "all" && row.pocName !== talent) return false;
+      if (agencyFilter && !matchesAgency(row, agencyFilter)) return false;
       if (collabOnly && !row.deliverables.some((d) => /collab/i.test(d.label))) return false;
       if (q) return (
         row.brand.toLowerCase().includes(q) ||
@@ -973,7 +981,7 @@ export function DeliverablesView() {
       );
       return true;
     });
-  }, [displayData, filter, month, talent, collabOnly, search]);
+  }, [displayData, filter, month, talent, agencyFilter, collabOnly, search]);
 
   function copyPaymentSummary() {
     const rows = filtered.filter((r) => r.overallStatus === "awaiting-payment");
@@ -1059,21 +1067,19 @@ export function DeliverablesView() {
       </div>
 
       {/* Agency quick-filter chips */}
-      {!loading && topAgencies.length > 0 && (
+      {!loading && (
         <div className="dl-agency-chips">
-          {topAgencies.map(({ name, company, count }) => (
+          {AGENCY_CHIPS.map((agency) => (
             <button
-              key={name}
-              className={`dl-agency-chip ${talent === name ? "active" : ""}`}
-              onClick={() => setTalent(talent === name ? "all" : name)}
-              title={company ? `${name} · ${company}` : name}
+              key={agency}
+              className={`dl-agency-chip ${agencyFilter === agency ? "active" : ""}`}
+              onClick={() => setAgencyFilter(agencyFilter === agency ? "" : agency)}
             >
               <span className="dl-agency-chip-avatar">
-                {name.charAt(0).toUpperCase()}
+                {agency.charAt(0).toUpperCase()}
               </span>
-              <span className="dl-agency-chip-name">{name}</span>
-              {company && <span className="dl-agency-chip-co">{company}</span>}
-              <span className="dl-agency-chip-count">{count}</span>
+              <span className="dl-agency-chip-name">{agency}</span>
+              <span className="dl-agency-chip-count">{agencyCounts[agency] ?? 0}</span>
             </button>
           ))}
         </div>
