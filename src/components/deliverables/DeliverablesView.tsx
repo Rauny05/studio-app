@@ -223,28 +223,24 @@ function DeliverableModal({
                   </button>
                 );
               })}
-            </div>
 
-            {/* Add new deliverable — hidden in readOnly */}
-            {!readOnly && (
-              <div className="dl-modal-add-row">
-                <input
-                  ref={newDelRef}
-                  className="dl-modal-add-input"
-                  placeholder="Add deliverable…"
-                  value={newDel}
-                  onChange={(e) => setNewDel(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") addDeliverable(); }}
-                />
-                <button
-                  className="dl-modal-add-btn"
-                  onClick={addDeliverable}
-                  disabled={!newDel.trim()}
-                >
-                  + Add
-                </button>
-              </div>
-            )}
+              {/* Inline ghost chip input — feels native, no separate row */}
+              {!readOnly && (
+                <div className="dl-chip-ghost-wrap">
+                  <input
+                    ref={newDelRef}
+                    className="dl-chip-ghost-input"
+                    placeholder="+ Add deliverable…"
+                    value={newDel}
+                    onChange={(e) => setNewDel(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") addDeliverable();
+                      if (e.key === "Escape") setNewDel("");
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Payment pipeline */}

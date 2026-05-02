@@ -269,6 +269,127 @@ function DeliverablesSummary() {
   );
 }
 
+// ── To Shoot widget ───────────────────────────────────────────────────────────
+
+interface ShootItem { id: string; text: string; done: boolean }
+
+function ToShoot() {
+  const [items, setItems] = useState<ShootItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("to-shoot-list") ?? "[]"); } catch { return []; }
+  });
+  const [draft, setDraft] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function persist(next: ShootItem[]) {
+    setItems(next);
+    localStorage.setItem("to-shoot-list", JSON.stringify(next));
+  }
+
+  function add() {
+    const text = draft.trim();
+    if (!text) return;
+    persist([...items, { id: crypto.randomUUID(), text, done: false }]);
+    setDraft("");
+    inputRef.current?.focus();
+  }
+
+  function toggle(id: string) {
+    persist(items.map((it) => it.id === id ? { ...it, done: !it.done } : it));
+  }
+
+  function remove(id: string) {
+    persist(items.filter((it) => it.id !== id));
+  }
+
+  const active = items.filter((it) => !it.done);
+  const done   = items.filter((it) => it.done);
+
+  return (
+    <div className="shoot-widget">
+      <div className="shoot-header">
+        <div className="shoot-header-left">
+          <span className="shoot-icon">📷</span>
+          <div>
+            <h2 className="shoot-title">To Shoot</h2>
+            <p className="shoot-sub">
+              {active.length === 0 ? "Nothing queued" : `${active.length} idea${active.length !== 1 ? "s" : ""} queued`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="shoot-list">
+        {active.map((it) => (
+          <div key={it.id} className="shoot-item">
+            <button className="shoot-check" onClick={() => toggle(it.id)} title="Mark as shot">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="12" cy="12" r="9" />
+              </svg>
+            </button>
+            <span className="shoot-text">{it.text}</span>
+            <button className="shoot-remove" onClick={() => remove(it.id)} title="Remove">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        ))}
+
+        {active.length === 0 && draft === "" && (
+          <p className="shoot-empty">Tap below to add your first idea</p>
+        )}
+
+        {/* Inline add */}
+        <div className="shoot-add-row">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0, opacity: 0.4 }}>
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <input
+            ref={inputRef}
+            className="shoot-input"
+            placeholder="Add shoot idea…"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") add(); }}
+          />
+          {draft.trim() && (
+            <button className="shoot-add-btn" onClick={add}>Add</button>
+          )}
+        </div>
+      </div>
+
+      {done.length > 0 && (
+        <details className="shoot-done-section">
+          <summary className="shoot-done-summary">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+            {done.length} shot
+          </summary>
+          <div className="shoot-done-list">
+            {done.map((it) => (
+              <div key={it.id} className="shoot-item shoot-item-done">
+                <button className="shoot-check shoot-check-done" onClick={() => toggle(it.id)} title="Restore">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+                <span className="shoot-text">{it.text}</span>
+                <button className="shoot-remove" onClick={() => remove(it.id)}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
 // ── Reel row with inline edit ─────────────────────────────────────────────────
 
 function ReelRow({
@@ -930,8 +1051,11 @@ export function DashboardView() {
 
   return (
     <div className="dashboard-page">
-      {/* Today's Reels — priority top section */}
-      <TodayReels />
+      {/* Reel Schedule + To Shoot — side by side card stacks */}
+      <div className="schedule-stack-row">
+        <TodayReels />
+        <ToShoot />
+      </div>
 
       {/* Priority Videos */}
       <PriorityVideos />
