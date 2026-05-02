@@ -944,6 +944,19 @@ export function DeliverablesView() {
     [displayData]
   );
 
+  // Top 5 most-worked-with agencies/POCs for quick-filter chips
+  const topAgencies = useMemo(() => {
+    const counts: Record<string, { name: string; company: string; count: number }> = {};
+    displayData.forEach((r) => {
+      if (!r.pocName) return;
+      if (!counts[r.pocName]) counts[r.pocName] = { name: r.pocName, company: r.pocCompany, count: 0 };
+      counts[r.pocName].count++;
+    });
+    return Object.values(counts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [displayData]);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return displayData.filter((row) => {
@@ -1044,6 +1057,27 @@ export function DeliverablesView() {
           </button>
         </div>
       </div>
+
+      {/* Agency quick-filter chips */}
+      {!loading && topAgencies.length > 0 && (
+        <div className="dl-agency-chips">
+          {topAgencies.map(({ name, company, count }) => (
+            <button
+              key={name}
+              className={`dl-agency-chip ${talent === name ? "active" : ""}`}
+              onClick={() => setTalent(talent === name ? "all" : name)}
+              title={company ? `${name} · ${company}` : name}
+            >
+              <span className="dl-agency-chip-avatar">
+                {name.charAt(0).toUpperCase()}
+              </span>
+              <span className="dl-agency-chip-name">{name}</span>
+              {company && <span className="dl-agency-chip-co">{company}</span>}
+              <span className="dl-agency-chip-count">{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Status strip */}
       {!loading && displayData.length > 0 && (
