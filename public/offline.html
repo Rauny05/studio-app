@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#6c28d9" />
+  <title>RM Studio — Offline</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #0a0a0f;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 20px)
+               env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 20px);
+    }
+
+    .icon-wrap {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(160deg, #6c28d9 0%, #5b14be 100%);
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+      box-shadow: 0 8px 32px rgba(108, 40, 217, 0.45);
+    }
+
+    .icon-wrap span {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: #fff;
+    }
+
+    .wave {
+      font-size: 48px;
+      margin-bottom: 20px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    p {
+      font-size: 15px;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      max-width: 260px;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 32px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+    }
+
+    button:active { opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <div class="icon-wrap"><span>RM</span></div>
+  <div class="wave">📡</div>
+  <h1>You're offline</h1>
+  <p>RM Studio needs a connection to load. Check your network and try again.</p>
+  <button onclick="window.location.reload()">Retry</button>
+</body>
+</html>

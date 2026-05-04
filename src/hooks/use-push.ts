@@ -4,20 +4,36 @@ import { useEffect, useState } from "react";
 
 type PushState = "unsupported" | "denied" | "subscribed" | "unsubscribed" | "loading";
 
+let swRegistration: ServiceWorkerRegistration | null = null;
+
 export function usePush() {
   const [state, setState] = useState<PushState>("loading");
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+    if (
+      typeof window === "undefined" ||
+      !("serviceWorker" in navigator) ||
+      !("PushManager" in window)
+    ) {
       setState("unsupported");
       return;
     }
 
     async function init() {
       try {
-        // Register service worker
-        const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        const reg = await navigator.serviceWorker.register("/sw.js", {
+          scope: "/",
+          updateViaCache: "none",
+        });
+        swRegistration = reg;
         await navigator.serviceWorker.ready;
+
+        // Listen for SW messages (e.g. background sync)
+        navigator.serviceWorker.addEventListener("message", (e) => {
+          if (e.data?.type === "SYNC_REQUESTED") {
+            window.dispatchEvent(new CustomEvent("rm-sync"));
+          }
+        });
 
         const perm = Notification.permission;
         if (perm === "denied") { setState("denied"); return; }
@@ -34,7 +50,7 @@ export function usePush() {
 
   async function subscribe(): Promise<boolean> {
     try {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = swRegistration ?? (await navigator.serviceWorker.ready);
       const perm = await Notification.requestPermission();
       if (perm !== "granted") { setState("denied"); return false; }
 
@@ -59,7 +75,7 @@ export function usePush() {
 
   async function unsubscribe(): Promise<void> {
     try {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = swRegistration ?? (await navigator.serviceWorker.ready);
       const sub = await reg.pushManager.getSubscription();
       if (!sub) { setState("unsubscribed"); return; }
 
@@ -76,4 +92,3 @@ export function usePush() {
 
   return { state, subscribe, unsubscribe };
 }
-
