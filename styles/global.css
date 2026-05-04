@@ -1429,6 +1429,17 @@ html[data-theme="light"] {
   color: var(--app-text);
 }
 
+.navbar-push-btn.push-active {
+  color: #7c3aed;
+}
+.navbar-push-btn.push-active:hover {
+  background: rgba(124,58,237,0.1);
+}
+.navbar-push-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ═══════════════════════════════════════════════
    GLOBAL SEARCH PANEL
    ═══════════════════════════════════════════════ */

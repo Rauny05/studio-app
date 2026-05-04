@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useUIStore } from "@/store/ui-store";
 import { useKanbanStore } from "@/store/kanban-store";
 import { SyncIndicator } from "@/components/vault/SyncIndicator";
+import { usePush } from "@/hooks/use-push";
 
 const pageTitles: Record<string, string> = {
   "/dashboard":    "Dashboard",
@@ -98,6 +99,7 @@ function GlobalSearch({ onClose }: { onClose: () => void }) {
 
 export function Navbar() {
   const { toggleSidebar, sidebarCollapsed, darkMode, toggleDarkMode, searchOpen, setSearchOpen } = useUIStore();
+  const { state: pushState, subscribe, unsubscribe } = usePush();
   const pathname = usePathname();
   const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
@@ -152,6 +154,33 @@ export function Navbar() {
             <span className="navbar-search-placeholder">Search…</span>
             <kbd>⌘K</kbd>
           </button>
+
+          {/* Push notification toggle */}
+          {pushState !== "unsupported" && (
+            <button
+              className={`navbar-icon-btn navbar-push-btn ${pushState === "subscribed" ? "push-active" : ""}`}
+              onClick={() => pushState === "subscribed" ? unsubscribe() : subscribe()}
+              title={
+                pushState === "subscribed" ? "Notifications on — click to disable" :
+                pushState === "denied"     ? "Notifications blocked in browser settings" :
+                pushState === "loading"    ? "Loading…" :
+                "Enable push notifications"
+              }
+              disabled={pushState === "loading" || pushState === "denied"}
+            >
+              {pushState === "subscribed" ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6V11c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  {pushState === "denied" && <line x1="1" y1="1" x2="23" y2="23" />}
+                </svg>
+              )}
+            </button>
+          )}
 
           {/* Dark mode toggle */}
           <button
