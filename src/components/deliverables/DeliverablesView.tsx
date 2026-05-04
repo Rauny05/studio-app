@@ -347,11 +347,13 @@ function DeliverableModal({
   row,
   onClose,
   onSave,
+  onDelete,
   readOnly = false,
 }: {
   row: DeliverableRow;
   onClose: () => void;
   onSave: (updated: DeliverableRow) => Promise<void>;
+  onDelete?: () => Promise<void>;
   readOnly?: boolean;
 }) {
   const [local, setLocal] = useState<DeliverableRow>({ ...row, deliverables: row.deliverables.map((d) => ({ ...d })) });
@@ -608,9 +610,27 @@ function DeliverableModal({
 
         {/* Footer */}
         <div className="dl-modal-footer">
-          <button className="kanban-btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button className="kanban-btn-secondary" onClick={onClose}>Cancel</button>
+            {onDelete && (
+              <button
+                className="dl-delete-card-btn"
+                onClick={async () => {
+                  if (!confirm("Delete this card? This can't be undone.")) return;
+                  await onDelete();
+                }}
+                title="Delete this card"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4h6v2" />
+                </svg>
+                Delete card
+              </button>
+            )}
+          </div>
 
           {!readOnly && (
             <div className="dl-footer-actions">
@@ -1027,6 +1047,17 @@ export function DeliverablesView() {
     });
   }
 
+  async function handleDelete(id: string) {
+    const next = localRows.filter((r) => r.id !== id);
+    setLocalRows(next);
+    setSelectedId(null);
+    await fetch("/api/sync/deliverable-local-rows", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    });
+  }
+
   return (
     <div className="dl-page" style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
 
@@ -1253,6 +1284,7 @@ export function DeliverablesView() {
           row={selectedRow}
           onClose={() => setSelectedId(null)}
           onSave={handleSave}
+          onDelete={selectedRow.id.startsWith("local-") ? () => handleDelete(selectedRow.id) : undefined}
           readOnly={!canEdit}
         />
       )}
