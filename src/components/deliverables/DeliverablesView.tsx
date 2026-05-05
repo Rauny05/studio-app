@@ -361,6 +361,14 @@ function DeliverableModal({
   const [sheetState, setSheetState] = useState<"idle" | "syncing" | "ok" | "error" | "setup">("idle");
   const [newDel, setNewDel] = useState("");
   const newDelRef = useRef<HTMLInputElement>(null);
+  const [pnCopied, setPnCopied] = useState(false);
+
+  function copyPn() {
+    navigator.clipboard.writeText(local.pnNo.toUpperCase()).then(() => {
+      setPnCopied(true);
+      setTimeout(() => setPnCopied(false), 1800);
+    });
+  }
 
   const status = STATUS_CONFIG[local.overallStatus];
 
@@ -452,6 +460,23 @@ function DeliverableModal({
             <span className="dl-pn-badge">
               <span className="dl-pn-dot" data-status={local.overallStatus} />
               {local.pnNo.toUpperCase()}
+              <button
+                className="dl-pn-copy-btn"
+                onClick={copyPn}
+                title="Copy PN"
+                aria-label="Copy PN number"
+              >
+                {pnCopied ? (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                )}
+              </button>
             </span>
             <span className="dl-status-pill" data-status={local.overallStatus}>
               {status.label}

@@ -4528,6 +4528,34 @@ html[data-theme="light"] .dl-collab-tag { background: rgba(109,40,217,0.11); col
   flex-shrink: 0;
 }
 
+.dl-pn-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: var(--app-text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 0;
+  margin-left: 1px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.dl-pn-badge:hover .dl-pn-copy-btn {
+  opacity: 1;
+}
+.dl-pn-copy-btn:hover {
+  color: var(--app-purple);
+  background: rgba(124, 58, 237, 0.1);
+}
+.dl-pn-copy-btn:active {
+  transform: scale(0.88);
+}
+
 /* ── Status color system (data-status) ─────────────────────────────────────── */
 /* Light mode — high-contrast, readable on warm off-white */
 [data-status="pending"]            { --s-color: #57534e; --s-bg: rgba(87,83,78,0.09); --s-border: rgba(87,83,78,0.22); }
