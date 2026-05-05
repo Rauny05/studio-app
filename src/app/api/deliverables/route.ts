@@ -119,7 +119,19 @@ function computeOverallStatus(
   return "pending";
 }
 
-export async function GET() {
+export async function GET(req: import("next/server").NextRequest) {
+  // Accept both NextAuth session and mobile JWT
+  const { getServerSession } = await import("next-auth");
+  const { authOptions } = await import("@/app/api/auth/[...nextauth]/route");
+  const { verifyMobileToken } = await import("@/lib/mobile-auth");
+
+  const session = await getServerSession(authOptions);
+  const mobile = session?.user?.email ? null : await verifyMobileToken(req);
+
+  if (!session?.user?.email && !mobile?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
 

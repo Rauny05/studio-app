@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { dataGet, dataSet } from "@/lib/data-store";
+import { verifyMobileToken } from "@/lib/mobile-auth";
 
 const ALLOWED_KEYS = new Set(["kanban", "todos", "reels", "priority-videos", "cash", "deliverable-overrides", "deliverable-local-rows"]);
 
@@ -10,12 +11,24 @@ interface SyncEnvelope<T = unknown> {
   updatedAt: string;
 }
 
+async function authenticate(req: NextRequest): Promise<string | null> {
+  // 1. NextAuth session (web)
+  const session = await getServerSession(authOptions);
+  if (session?.user?.email) return session.user.email;
+
+  // 2. Mobile JWT
+  const mobile = await verifyMobileToken(req);
+  if (mobile?.email) return mobile.email;
+
+  return null;
+}
+
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ key: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  const email = await authenticate(req);
+  if (!email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -41,8 +54,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ key: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  const email = await authenticate(req);
+  if (!email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
