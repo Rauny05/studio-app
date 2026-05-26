@@ -50,8 +50,22 @@ function parseCSV(text: string): string[][] {
 }
 
 export interface DeliverableItem {
+  id?: string;
   label: string;
+  type?: string;
   status: "Pending" | "Completed";
+  completedAt?: string;
+  completedBy?: string;
+  publishedUrl?: string;
+  emailDrafted?: boolean;
+}
+
+export interface ActivityEntry {
+  type: "deliverable_completed" | "email_generated" | "url_added";
+  message: string;
+  deliverableId?: string;
+  deliverableLabel?: string;
+  createdAt: string;
 }
 
 export interface DeliverableRow {
@@ -70,6 +84,7 @@ export interface DeliverableRow {
   paymentStep: 0 | 1 | 2 | 3;
   overallStatus: "pending" | "in-progress" | "awaiting-payment" | "done";
   month: string;
+  activityLog?: ActivityEntry[];
 }
 
 const MONTH_MAP: Record<string, string> = {

@@ -7986,3 +7986,499 @@ details[open] .pv-done-summary svg { transform: rotate(90deg); }
 @media not all and (display-mode: standalone) {
   #pwa-splash { display: none; }
 }
+
+/* ── Deliverable item list (inside modal) ─────────────────────────────────── */
+
+.dl-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dl-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--app-border);
+  background: transparent;
+  transition: border-color 0.18s, background 0.18s;
+}
+
+.dl-item-row.done {
+  background: rgba(34, 197, 94, 0.04);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.dl-item-row-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dl-item-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--app-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dl-item-row.done .dl-item-label {
+  color: var(--app-text-muted);
+  text-decoration: line-through;
+  text-decoration-color: rgba(34, 197, 94, 0.5);
+}
+
+.dl-item-type-tag {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+  background: var(--app-surface-2, rgba(255,255,255,0.04));
+  border: 1px solid var(--app-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+.dl-item-row-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.dl-item-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 500;
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+.dl-item-status-badge.done {
+  color: #16a34a;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.dl-item-status-badge.pending {
+  color: var(--app-text-muted);
+  background: rgba(115, 115, 115, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .dl-item-status-badge.done { color: #4ade80; }
+}
+
+.dl-item-ts {
+  font-size: 10px;
+  color: var(--app-text-muted);
+  white-space: nowrap;
+}
+
+.dl-item-url-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #3b82f6;
+  text-decoration: none;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(59, 130, 246, 0.08);
+  transition: background 0.15s;
+}
+
+.dl-item-url-btn:hover { background: rgba(59, 130, 246, 0.15); }
+
+.dl-item-undo-btn {
+  font-size: 10.5px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--app-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.dl-item-undo-btn:hover { opacity: 1; }
+
+.dl-mark-complete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 6px;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.dl-mark-complete-btn:hover {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #16a34a;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dl-mark-complete-btn:hover { color: #4ade80; }
+}
+
+.dl-item-remove-btn {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--app-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+  opacity: 0.4;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.dl-item-remove-btn:hover { opacity: 1; color: #ef4444; }
+
+/* ── All-done banner ──────────────────────────────────────────────────────── */
+
+.dl-all-done-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.07);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #16a34a;
+  margin-bottom: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dl-all-done-banner { color: #4ade80; }
+}
+
+.dl-all-done-cta {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.dl-all-done-cta:hover { background: rgba(59, 130, 246, 0.14); }
+
+/* ── Activity feed ────────────────────────────────────────────────────────── */
+
+.dl-activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 4px;
+}
+
+.dl-activity-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.dl-activity-entry:last-child { border-bottom: none; }
+
+.dl-activity-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+  background: var(--app-text-muted);
+}
+
+.dl-activity-dot.deliverable_completed { background: #22c55e; }
+.dl-activity-dot.email_generated       { background: #3b82f6; }
+.dl-activity-dot.url_added             { background: #f59e0b; }
+
+.dl-activity-msg {
+  flex: 1;
+  font-size: 12px;
+  color: var(--app-text);
+  line-height: 1.45;
+}
+
+.dl-activity-time {
+  font-size: 10.5px;
+  color: var(--app-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Completion flow modal ────────────────────────────────────────────────── */
+
+.dl-completion-overlay {
+  z-index: 1100; /* above the deliverable modal */
+}
+
+.dl-completion-modal {
+  background: var(--app-bg, #0a0a0a);
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  width: min(480px, calc(100vw - 32px));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dl-completion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.dl-completion-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dl-completion-check-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.dl-completion-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text);
+  margin: 0 0 2px;
+}
+
+.dl-completion-subtitle {
+  font-size: 11.5px;
+  color: var(--app-text-muted);
+  margin: 0;
+}
+
+.dl-completion-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dl-completion-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-text);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.dl-completion-optional {
+  font-weight: 400;
+  font-style: italic;
+  opacity: 0.55;
+}
+
+.dl-completion-url-input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface, rgba(255,255,255,0.03));
+  color: var(--app-text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.dl-completion-url-input:focus { border-color: rgba(59, 130, 246, 0.5); }
+.dl-completion-url-input::placeholder { color: var(--app-text-muted); opacity: 0.6; }
+
+.dl-completion-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dl-generate-email-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #3b82f6;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-left: auto;
+}
+
+.dl-generate-email-btn:hover { background: #2563eb; }
+
+/* Email preview step */
+
+.dl-email-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dl-email-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dl-email-preview-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #22c55e;
+}
+
+.dl-email-edit-btn {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.dl-email-edit-btn:hover { opacity: 1; }
+
+.dl-email-preview {
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--app-surface, rgba(255,255,255,0.03));
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--app-text);
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: inherit;
+  margin: 0;
+}
+
+.dl-email-actions {
+  flex-wrap: wrap;
+}
+
+.dl-copy-email-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-text);
+  background: var(--app-surface, rgba(255,255,255,0.05));
+  border: 1px solid var(--app-border);
+  border-radius: 7px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.dl-copy-email-btn:hover { background: rgba(255,255,255,0.08); }
+
+.dl-copy-email-btn.ok {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.dl-gmail-btn,
+.dl-outlook-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 7px;
+  padding: 6px 12px;
+  cursor: pointer;
+  border: 1px solid var(--app-border);
+  transition: background 0.15s;
+}
+
+.dl-gmail-btn {
+  color: #ea4335;
+  background: rgba(234, 67, 53, 0.06);
+}
+
+.dl-gmail-btn:hover { background: rgba(234, 67, 53, 0.12); }
+
+.dl-outlook-btn {
+  color: #0078d4;
+  background: rgba(0, 120, 212, 0.06);
+}
+
+.dl-outlook-btn:hover { background: rgba(0, 120, 212, 0.12); }
+
+.dl-confirm-complete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: white;
+  background: #22c55e;
+  border: none;
+  border-radius: 7px;
+  padding: 7px 14px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: background 0.15s;
+}
+
+.dl-confirm-complete-btn:hover { background: #16a34a; }

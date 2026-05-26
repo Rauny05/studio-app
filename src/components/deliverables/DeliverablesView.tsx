@@ -1,8 +1,66 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import type { DeliverableRow, DeliverableItem } from "@/app/api/deliverables/route";
+import { useSession } from "next-auth/react";
+import type { DeliverableRow, DeliverableItem, ActivityEntry } from "@/app/api/deliverables/route";
 import { usePermission } from "@/hooks/use-permission";
+
+// ── Deliverable-type helpers ──────────────────────────────────────────────────
+
+function inferType(label: string): string {
+  const l = label.toLowerCase();
+  if (l.includes("reel"))                                      return "reel";
+  if (l.includes("stor"))                                      return "story";
+  if (l.includes("youtube") || (l.includes("video") && !l.includes("stor"))) return "youtube";
+  if (l.includes("podcast") || l.includes("episode"))         return "podcast";
+  if (l.includes("post") || l.includes("ig ") || l.includes("instagram")) return "post";
+  return "general";
+}
+
+const TYPE_META: Record<string, { subject: string; linkLabel: string }> = {
+  reel:    { subject: "Reel posted",        linkLabel: "Reel link"    },
+  story:   { subject: "Story uploaded",     linkLabel: "Story link"   },
+  youtube: { subject: "Video published",    linkLabel: "Video link"   },
+  post:    { subject: "Post live",          linkLabel: "Post link"    },
+  podcast: { subject: "Episode released",   linkLabel: "Episode link" },
+  general: { subject: "Deliverable posted", linkLabel: "Link"         },
+};
+
+function generateEmailText({
+  pocName, deliverableName, deliverableType, currentDate,
+  liveUrl, creatorName, agencyName, allDeliverables,
+}: {
+  pocName: string; deliverableName: string; deliverableType: string;
+  currentDate: string; liveUrl: string; creatorName: string;
+  agencyName: string; allDeliverables: Array<{ label: string; status: string }>;
+}): string {
+  const meta  = TYPE_META[deliverableType] ?? TYPE_META.general;
+  const byline = [creatorName, agencyName].filter(Boolean).join(" - ");
+  const list   = allDeliverables
+    .map((d) => `${d.label} - ${d.status === "Completed" ? "Completed" : "Pending"}`)
+    .join("\n");
+  return `Hi ${pocName || "there"},
+
+${deliverableName} posted (${currentDate})
+
+${meta.linkLabel}:
+${liveUrl || "—"}
+
+List of all deliverables${byline ? ` from ${byline}` : ""}
+
+${list}
+
+Thanks`.trim();
+}
+
+function fmtDate(iso: string): string {
+  try { return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); }
+  catch { return ""; }
+}
+
+function stableId(rowId: string, idx: number): string {
+  return `${rowId}-del-${idx}`;
+}
 
 const POLL_INTERVAL = 30_000;
 
@@ -356,12 +414,19 @@ function DeliverableModal({
   onDelete?: () => Promise<void>;
   readOnly?: boolean;
 }) {
-  const [local, setLocal] = useState<DeliverableRow>({ ...row, deliverables: row.deliverables.map((d) => ({ ...d })) });
+  const { data: session } = useSession();
+  const userEmail = session?.user?.email ?? session?.user?.name ?? "unknown";
+
+  const [local, setLocal] = useState<DeliverableRow>({
+    ...row,
+    deliverables: row.deliverables.map((d, i) => ({ ...d, id: d.id ?? stableId(row.id, i) })),
+  });
   const [saveState, setSaveState] = useState<"idle" | "saving" | "ok" | "error">("idle");
   const [sheetState, setSheetState] = useState<"idle" | "syncing" | "ok" | "error" | "setup">("idle");
   const [newDel, setNewDel] = useState("");
   const newDelRef = useRef<HTMLInputElement>(null);
   const [pnCopied, setPnCopied] = useState(false);
+  const [completionTarget, setCompletionTarget] = useState<{ item: DeliverableItem; index: number } | null>(null);
 
   function copyPn() {
     navigator.clipboard.writeText(local.pnNo.toUpperCase()).then(() => {
@@ -441,11 +506,39 @@ function DeliverableModal({
       });
   }
 
+  async function handleCompletionConfirm(url: string) {
+    if (!completionTarget) return;
+    const { item, index } = completionTarget;
+    const now = new Date().toISOString();
+    const updatedDeliverables = local.deliverables.map((d, idx) =>
+      idx === index
+        ? { ...d, status: "Completed" as const, completedAt: now, completedBy: userEmail, publishedUrl: url || d.publishedUrl, emailDrafted: true }
+        : d
+    );
+    const newEntries: ActivityEntry[] = [
+      { type: "deliverable_completed", message: `${item.label} marked complete`, deliverableId: item.id, deliverableLabel: item.label, createdAt: now },
+      ...(url ? [{ type: "url_added" as const, message: `Live URL added for ${item.label}`, deliverableId: item.id, deliverableLabel: item.label, createdAt: now }] : []),
+      { type: "email_generated", message: `Completion email generated for ${item.label}`, deliverableId: item.id, deliverableLabel: item.label, createdAt: now },
+    ];
+    const updatedRow: DeliverableRow = {
+      ...local,
+      deliverables: updatedDeliverables,
+      activityLog: [...(local.activityLog ?? []), ...newEntries],
+      overallStatus: computeStatus(updatedDeliverables, local.payment100),
+    };
+    setLocal(updatedRow);
+    setCompletionTarget(null);
+    // Auto-save to Redis
+    setSaveState("saving");
+    try { await onSave(updatedRow); setSaveState("ok"); setTimeout(() => setSaveState("idle"), 1800); }
+    catch { setSaveState("error"); setTimeout(() => setSaveState("idle"), 2000); }
+  }
+
   useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape" && !completionTarget) onClose(); }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, completionTarget]);
 
   const hasChanges = JSON.stringify(local) !== JSON.stringify(row);
   const allDone = local.deliverables.length > 0 && local.deliverables.every((d) => d.status === "Completed");
@@ -510,51 +603,88 @@ function DeliverableModal({
             </div>
           )}
 
-          {/* Deliverable chips — tappable yellow → green */}
+          {/* Deliverables — per-item rows with completion flow */}
           <div className="dl-modal-section">
             <div className="dl-modal-section-title">
               Deliverables
               <span className="dl-modal-section-hint">
-                {allDone ? "✓ All done" : "Tap to mark done"}
+                {allDone ? "✓ All done" : `${local.deliverables.filter(d => d.status === "Completed").length}/${local.deliverables.length} done`}
               </span>
             </div>
-            <div className="dl-modal-chips">
+
+            {/* All-done banner */}
+            {allDone && !local.payment100 && !readOnly && (
+              <div className="dl-all-done-banner">
+                <span>🎉 All deliverables completed!</span>
+                <button
+                  className="dl-all-done-cta"
+                  onClick={() => setLocal((prev) => ({ ...prev, paymentStep: 1 as 0|1|2|3, emailSent: true, overallStatus: "awaiting-payment" }))}
+                >
+                  → Mark Awaiting Payment
+                </button>
+              </div>
+            )}
+
+            <div className="dl-item-list">
               {local.deliverables.map((item, i) => {
                 const done = item.status === "Completed";
+                const itemType = item.type ?? inferType(item.label);
                 return (
-                  <button
-                    key={i}
-                    className={`dl-modal-chip ${done ? "done" : "pending"}`}
-                    onClick={() => { if (!readOnly) toggleChip(i); }}
-                    disabled={readOnly}
-                    title={readOnly ? item.label : done ? "Mark as pending" : "Mark as done"}
-                  >
-                    <span className="dl-chip-dot" data-done={done} />
-                    {item.label}
-                    {done ? (
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ) : (
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" opacity={0.5}>
-                        <circle cx="12" cy="12" r="9" />
-                      </svg>
-                    )}
-                    {!readOnly && (
-                      <span
-                        className="dl-chip-remove"
-                        role="button"
-                        aria-label="Remove"
-                        onClick={(e) => { e.stopPropagation(); removeChip(i); }}
-                      >×</span>
-                    )}
-                  </button>
+                  <div key={i} className={`dl-item-row${done ? " done" : ""}`}>
+                    <div className="dl-item-row-left">
+                      <span className="dl-chip-dot" data-done={done} />
+                      <span className="dl-item-label">{item.label}</span>
+                      <span className="dl-item-type-tag">{itemType}</span>
+                    </div>
+                    <div className="dl-item-row-right">
+                      {done ? (
+                        <>
+                          <span className="dl-item-status-badge done">
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Completed
+                          </span>
+                          {item.completedAt && (
+                            <span className="dl-item-ts">{fmtDate(item.completedAt)}</span>
+                          )}
+                          {item.publishedUrl && (
+                            <a href={item.publishedUrl} target="_blank" rel="noopener noreferrer" className="dl-item-url-btn" onClick={(e) => e.stopPropagation()}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                              View
+                            </a>
+                          )}
+                          {!readOnly && (
+                            <button className="dl-item-undo-btn" onClick={(e) => { e.stopPropagation(); toggleChip(i); }}>Undo</button>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <span className="dl-item-status-badge pending">Pending</span>
+                          {!readOnly && (
+                            <button
+                              className="dl-mark-complete-btn"
+                              onClick={(e) => { e.stopPropagation(); setCompletionTarget({ item, index: i }); }}
+                            >
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                              Mark Complete
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {!readOnly && (
+                        <button
+                          className="dl-item-remove-btn"
+                          onClick={(e) => { e.stopPropagation(); removeChip(i); }}
+                          aria-label="Remove deliverable"
+                        >×</button>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
 
-              {/* Inline ghost chip input — feels native, no separate row */}
+              {/* Ghost add input */}
               {!readOnly && (
-                <div className="dl-chip-ghost-wrap">
+                <div className="dl-chip-ghost-wrap" style={{ marginTop: 6 }}>
                   <input
                     ref={newDelRef}
                     className="dl-chip-ghost-input"
@@ -622,6 +752,22 @@ function DeliverableModal({
                 </svg>
                 {local.invoiceNumber}
               </span>
+            </div>
+          )}
+
+          {/* Activity log */}
+          {(local.activityLog?.length ?? 0) > 0 && (
+            <div className="dl-modal-section">
+              <div className="dl-modal-section-title">Activity</div>
+              <div className="dl-activity-feed">
+                {[...(local.activityLog ?? [])].reverse().slice(0, 8).map((entry, i) => (
+                  <div key={i} className="dl-activity-entry">
+                    <span className={`dl-activity-dot ${entry.type}`} />
+                    <span className="dl-activity-msg">{entry.message}</span>
+                    <span className="dl-activity-time">{fmtDate(entry.createdAt)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -707,6 +853,180 @@ function DeliverableModal({
                 {sheetState === "setup"   && "Setup needed"}
               </button>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Per-deliverable completion flow */}
+      {completionTarget && (
+        <CompletionFlowModal
+          item={completionTarget.item}
+          row={local}
+          onConfirm={handleCompletionConfirm}
+          onClose={() => setCompletionTarget(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Completion Flow Modal ─────────────────────────────────────────────────────
+function CompletionFlowModal({
+  item, row, onConfirm, onClose,
+}: {
+  item: DeliverableItem;
+  row: DeliverableRow;
+  onConfirm: (url: string) => void;
+  onClose: () => void;
+}) {
+  const [step, setStep]   = useState<"url" | "email">("url");
+  const [url,  setUrl]    = useState(item.publishedUrl ?? "");
+  const [email, setEmail] = useState("");
+  const [copied, setCopied] = useState(false);
+  const urlRef = useRef<HTMLInputElement>(null);
+  const type   = inferType(item.label);
+
+  useEffect(() => {
+    urlRef.current?.focus();
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function handleGenerate() {
+    const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    const generated = generateEmailText({
+      pocName: row.pocName,
+      deliverableName: item.label,
+      deliverableType: type,
+      currentDate: today,
+      liveUrl: url.trim(),
+      creatorName: row.pocName,
+      agencyName: row.pocCompany,
+      allDeliverables: row.deliverables.map((d) => ({
+        label: d.label,
+        status: d.id === item.id ? "Completed" : d.status,
+      })),
+    });
+    setEmail(generated);
+    navigator.clipboard.writeText(generated).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+    setStep("email");
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(email).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }
+
+  function handleGmail() {
+    const subj = encodeURIComponent(`${item.label} – ${row.brand}`);
+    const body = encodeURIComponent(email);
+    const to   = "";
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subj}&body=${body}`, "_blank");
+  }
+
+  function handleOutlook() {
+    const subj = encodeURIComponent(`${item.label} – ${row.brand}`);
+    const body = encodeURIComponent(email);
+    window.open(`https://outlook.live.com/mail/0/deeplink/compose?subject=${subj}&body=${body}`, "_blank");
+  }
+
+  return (
+    <div className="modal-overlay dl-completion-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="dl-completion-modal">
+
+        {/* Header */}
+        <div className="dl-completion-header">
+          <div className="dl-completion-header-left">
+            <span className="dl-completion-check-icon">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            <div>
+              <p className="dl-completion-title">Deliverable marked complete</p>
+              <p className="dl-completion-subtitle">{item.label}</p>
+            </div>
+          </div>
+          <button className="kanban-icon-btn" onClick={onClose} aria-label="Close">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="dl-completion-body">
+          {step === "url" ? (
+            <>
+              <label className="dl-completion-label">
+                Paste live URL
+                <span className="dl-completion-optional"> (optional)</span>
+              </label>
+              <input
+                ref={urlRef}
+                className="dl-completion-url-input"
+                type="url"
+                placeholder="https://instagram.com/reel/…"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleGenerate(); }}
+              />
+              <div className="dl-completion-actions">
+                <button className="kanban-btn-secondary" onClick={onClose}>Cancel</button>
+                <button className="dl-generate-email-btn" onClick={handleGenerate}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  Generate Email
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="dl-email-preview-wrap">
+                <div className="dl-email-preview-toolbar">
+                  <span className="dl-email-preview-label">
+                    {copied ? "✓ Auto-copied to clipboard" : "Draft email"}
+                  </span>
+                  <button className="dl-email-edit-btn" onClick={() => setStep("url")}>← Edit URL</button>
+                </div>
+                <pre className="dl-email-preview">{email}</pre>
+              </div>
+
+              <div className="dl-completion-actions dl-email-actions">
+                <button className={`dl-copy-email-btn${copied ? " ok" : ""}`} onClick={handleCopy}>
+                  {copied ? (
+                    <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Copied!</>
+                  ) : (
+                    <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Email</>
+                  )}
+                </button>
+                <button className="dl-gmail-btn" onClick={handleGmail}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  Open in Gmail
+                </button>
+                <button className="dl-outlook-btn" onClick={handleOutlook}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                  </svg>
+                  Outlook
+                </button>
+                <button className="dl-confirm-complete-btn" onClick={() => onConfirm(url.trim())}>
+                  Confirm &amp; Save
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
