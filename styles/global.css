@@ -4390,6 +4390,90 @@ html[data-theme="light"] .dl-collab-tag { background: rgba(109,40,217,0.11); col
   color: var(--app-text-secondary);
 }
 
+/* Completed button */
+.dl-completed-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--app-border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+  margin-top: 4px;
+}
+
+.dl-completed-btn:hover {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.dl-completed-btn[data-completed="true"] {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #16a34a;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dl-completed-btn[data-completed="true"] {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #4ade80;
+  }
+}
+
+.dl-completed-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.18s, color 0.18s;
+}
+
+.dl-completed-btn[data-completed="true"] .dl-completed-icon {
+  background: #22c55e;
+  color: white;
+}
+
+.dl-completed-label { flex: 1; text-align: left; }
+
+.dl-completed-undo {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Green glow border when card is marked completed */
+.dl-card[data-completed="true"] {
+  border-color: rgba(34, 197, 94, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(34, 197, 94, 0.15),
+    0 0 16px rgba(34, 197, 94, 0.12),
+    0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.dl-card[data-completed="true"] .dl-card-stripe {
+  background: #22c55e !important;
+}
+
+.dl-card[data-completed="true"]:hover {
+  box-shadow:
+    0 0 0 1px rgba(34, 197, 94, 0.25),
+    0 0 24px rgba(34, 197, 94, 0.18),
+    0 6px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
 /* Meta */
 .dl-meta {
   display: flex;

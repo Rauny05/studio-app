@@ -731,10 +731,15 @@ function DeliverableCard({
   const status = STATUS_CONFIG[row.overallStatus];
   const hasCollab = row.deliverables.some((d) => /collab/i.test(d.label));
   const lsKey = `dl-adv-rcvd-${row.id}`;
+  const completedKey = `dl-completed-${row.id}`;
   const [advRcvd, setAdvRcvd] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     const v = localStorage.getItem(lsKey);
     return v === "true";
+  });
+  const [completed, setCompleted] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(completedKey) === "true";
   });
 
   function toggleAdv(e: React.MouseEvent) {
@@ -746,10 +751,20 @@ function DeliverableCard({
     });
   }
 
+  function toggleCompleted(e: React.MouseEvent) {
+    e.stopPropagation();
+    setCompleted((prev) => {
+      const next = !prev;
+      localStorage.setItem(completedKey, String(next));
+      return next;
+    });
+  }
+
   return (
     <div
       className="dl-card"
       data-status={row.overallStatus}
+      data-completed={completed}
       onClick={onClick}
       style={{ cursor: "pointer" }}
       role="button"
@@ -868,6 +883,30 @@ function DeliverableCard({
             )}
           </span>
           <span className="dl-advance-label">Advance received</span>
+        </button>
+
+        {/* Completed button */}
+        <button
+          className="dl-completed-btn"
+          data-completed={completed}
+          onClick={toggleCompleted}
+        >
+          <span className="dl-completed-icon">
+            {completed ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </span>
+          <span className="dl-completed-label">
+            {completed ? "Deliverable Completed" : "Mark as Completed"}
+          </span>
+          {completed && <span className="dl-completed-undo">undo</span>}
         </button>
 
         {/* Tap hint on mobile */}
