@@ -879,7 +879,8 @@ function CompletionFlowModal({
   onConfirm: (url: string) => void;
   onClose: () => void;
 }) {
-  const [step, setStep]   = useState<"url" | "email">("url");
+  const isVideoType = /reel|video|short|yt\b/i.test(item.label);
+  const [step, setStep]   = useState<"url" | "email">(isVideoType ? "url" : "email");
   const [url,  setUrl]    = useState(item.publishedUrl ?? "");
   const [email, setEmail] = useState("");
   const [copied, setCopied] = useState(false);
@@ -887,11 +888,35 @@ function CompletionFlowModal({
   const type   = inferType(item.label);
 
   useEffect(() => {
-    urlRef.current?.focus();
+    if (isVideoType) urlRef.current?.focus();
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, isVideoType]);
+
+  // Non-video types: auto-generate the email immediately on mount
+  useEffect(() => {
+    if (isVideoType) return;
+    const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    const generated = generateEmailText({
+      pocName: row.pocName,
+      deliverableName: item.label,
+      deliverableType: type,
+      currentDate: today,
+      liveUrl: "",
+      creatorName: row.pocName,
+      agencyName: row.pocCompany,
+      allDeliverables: row.deliverables.map((d) => ({
+        label: d.label,
+        status: d.id === item.id ? "Completed" : d.status,
+      })),
+    });
+    setEmail(generated);
+    navigator.clipboard.writeText(generated).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleGenerate() {
     const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
