@@ -39,7 +39,7 @@ function generateEmailText({
   const list   = allDeliverables
     .map((d) => `${d.label} - ${d.status === "Completed" ? "Completed" : "Pending"}`)
     .join("\n");
-  return `Hi ${pocName || "there"},
+  return `Hi Salil,
 
 ${deliverableName} posted (${currentDate})
 
