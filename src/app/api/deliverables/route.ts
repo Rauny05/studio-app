@@ -84,6 +84,7 @@ export interface DeliverableRow {
   paymentStep: 0 | 1 | 2 | 3;
   overallStatus: "pending" | "in-progress" | "awaiting-payment" | "done";
   month: string;
+  goLiveDate?: string;       // YYYY-MM-DD
   activityLog?: ActivityEntry[];
 }
 

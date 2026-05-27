@@ -269,200 +269,119 @@ function DeliverablesSummary() {
   );
 }
 
-// ── To Shoot widget ───────────────────────────────────────────────────────────
+// ── Go Live Dates widget ──────────────────────────────────────────────────────
 
-interface ShootItem { id: string; text: string; done: boolean }
+function GoLiveDates() {
+  const [entries, setEntries] = useState<{
+    id: string; brand: string; goLiveDate: string; deliverableNames: string[];
+  }[]>([]);
+  const [loading, setLoading] = useState(true);
 
-function ShootItemRow({
-  item,
-  idx,
-  onToggle,
-  onRename,
-  onRemove,
-}: {
-  item: ShootItem;
-  idx: number;
-  onToggle: () => void;
-  onRename: (text: string) => void;
-  onRemove: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(item.text);
-  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/deliverables", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/sync/deliverable-overrides", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([sheet, overridesEnv]) => {
+      const rows: DeliverableRow[] = sheet.deliverables ?? [];
+      const overrides: Record<string, DeliverableRow> = overridesEnv?.data ?? {};
+      const merged = rows.map((r) => overrides[r.id] ?? r);
 
-  function startEdit() {
-    setDraft(item.text);
-    setEditing(true);
-    setTimeout(() => { inputRef.current?.focus(); inputRef.current?.select(); }, 0);
-  }
+      const result = merged
+        .filter((r) => r.goLiveDate)
+        .map((r) => {
+          // Only show reels, videos, YT, shorts, events
+          const names = r.deliverables
+            .filter((d) => /reel|video|short|yt\b|event/i.test(d.label))
+            .map((d) => d.label);
+          return { id: r.id, brand: r.brand, goLiveDate: r.goLiveDate!, deliverableNames: names.length > 0 ? names : [r.brand] };
+        })
+        .sort((a, b) => a.goLiveDate.localeCompare(b.goLiveDate));
 
-  function commit() {
-    const trimmed = draft.trim();
-    if (trimmed && trimmed !== item.text) onRename(trimmed);
-    setEditing(false);
-  }
+      setEntries(result);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
 
-  return (
-    <div className={`shoot-item ${item.done ? "shoot-item-done" : ""}`}>
-      <button className={`shoot-check ${item.done ? "shoot-check-done" : ""}`} onClick={onToggle} title={item.done ? "Restore" : "Mark as shot"}>
-        {item.done ? (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <circle cx="12" cy="12" r="9" />
-          </svg>
-        )}
-      </button>
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-      <span className="shoot-idx">{idx + 1}</span>
+  // Split into upcoming and past
+  const upcoming = entries.filter((e) => new Date(e.goLiveDate + "T00:00:00") >= today);
+  const past     = entries.filter((e) => new Date(e.goLiveDate + "T00:00:00") < today);
 
-      {editing ? (
-        <input
-          ref={inputRef}
-          className="shoot-edit-input"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") setEditing(false);
-          }}
-        />
-      ) : (
-        <span className="shoot-text" onClick={startEdit} title="Click to edit">{item.text}</span>
-      )}
-
-      {!editing && (
-        <div className="shoot-item-actions">
-          <button className="shoot-action-btn" onClick={startEdit} title="Edit">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-          <button className="shoot-action-btn shoot-action-remove" onClick={onRemove} title="Remove">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ToShoot() {
-  const [items, setItems] = useState<ShootItem[]>(() => {
-    if (typeof window === "undefined") return [];
-    try { return JSON.parse(localStorage.getItem("to-shoot-list") ?? "[]"); } catch { return []; }
-  });
-  const [draft, setDraft] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  function persist(next: ShootItem[]) {
-    setItems(next);
-    localStorage.setItem("to-shoot-list", JSON.stringify(next));
-  }
-
-  function add() {
-    const text = draft.trim();
-    if (!text) return;
-    persist([...items, { id: crypto.randomUUID(), text, done: false }]);
-    setDraft("");
-    inputRef.current?.focus();
-  }
-
-  function toggle(id: string) {
-    persist(items.map((it) => it.id === id ? { ...it, done: !it.done } : it));
-  }
-
-  function rename(id: string, text: string) {
-    persist(items.map((it) => it.id === id ? { ...it, text } : it));
-  }
-
-  function remove(id: string) {
-    persist(items.filter((it) => it.id !== id));
-  }
-
-  const active = items.filter((it) => !it.done);
-  const done   = items.filter((it) => it.done);
+  if (!loading && entries.length === 0) return null;
 
   return (
-    <div className="shoot-widget">
-      <div className="shoot-header">
-        <div className="shoot-header-left">
-          <span className="shoot-icon">📷</span>
+    <div className="golive-widget">
+      <div className="golive-header">
+        <div className="golive-title-row">
+          <span className="golive-icon">📅</span>
           <div>
-            <h2 className="shoot-title">To Shoot</h2>
-            <p className="shoot-sub">
-              {active.length === 0 ? "Nothing queued" : `${active.length} idea${active.length !== 1 ? "s" : ""} queued`}
-            </p>
+            <h2 className="golive-title">Go Live Dates</h2>
+            <p className="golive-sub">{loading ? "Loading…" : `${upcoming.length} upcoming`}</p>
           </div>
         </div>
+        <a href="/deliverables" className="dashboard-panel-link">Manage →</a>
       </div>
 
-      <div className="shoot-list">
-        {active.map((it, idx) => (
-          <ShootItemRow
-            key={it.id}
-            item={it}
-            idx={idx}
-            onToggle={() => toggle(it.id)}
-            onRename={(text) => rename(it.id, text)}
-            onRemove={() => remove(it.id)}
-          />
-        ))}
-
-        {active.length === 0 && draft === "" && (
-          <div className="shoot-empty">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.25, marginBottom: 8 }}>
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
-            <span>Add your first shoot idea below</span>
-          </div>
-        )}
-
-        {/* Inline add row */}
-        <div className="shoot-add-row">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0, opacity: 0.4 }}>
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          <input
-            ref={inputRef}
-            className="shoot-input"
-            placeholder="Add shoot idea…"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") add(); }}
-          />
-          {draft.trim() && (
-            <button className="shoot-add-btn" onClick={add}>Add</button>
+      {loading ? (
+        <div className="dl-dash-loading"><div className="dl-spinner" style={{ width: 18, height: 18, borderWidth: 1.5 }} /><span>Loading…</span></div>
+      ) : (
+        <div className="golive-scroll">
+          {upcoming.map((e) => {
+            const d = new Date(e.goLiveDate + "T00:00:00");
+            const isToday = d.getTime() === today.getTime();
+            const isTomorrow = d.getTime() === today.getTime() + 86400000;
+            const daysLeft = Math.round((d.getTime() - today.getTime()) / 86400000);
+            const dayLabel = isToday ? "Today" : isTomorrow ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short" });
+            const dateLabel = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+            return (
+              <a key={e.id} href="/deliverables" className={`golive-card ${isToday ? "golive-card-today" : ""}`}>
+                <div className="golive-card-date">
+                  <span className="golive-card-day">{dayLabel}</span>
+                  <span className="golive-card-num">{dateLabel}</span>
+                  {!isToday && !isTomorrow && <span className="golive-card-countdown">in {daysLeft}d</span>}
+                </div>
+                <div className="golive-card-body">
+                  <span className="golive-card-brand">{e.brand}</span>
+                  <div className="golive-card-chips">
+                    {e.deliverableNames.map((n, i) => (
+                      <span key={i} className="golive-card-chip">{n}</span>
+                    ))}
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+          {upcoming.length === 0 && (
+            <div className="golive-empty">No upcoming go-live dates. Open a deliverable card to set one.</div>
           )}
         </div>
-      </div>
+      )}
 
-      {done.length > 0 && (
-        <details className="shoot-done-section">
-          <summary className="shoot-done-summary">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-            {done.length} shot
-          </summary>
-          <div className="shoot-done-list">
-            {done.map((it, idx) => (
-              <ShootItemRow
-                key={it.id}
-                item={it}
-                idx={idx}
-                onToggle={() => toggle(it.id)}
-                onRename={(text) => rename(it.id, text)}
-                onRemove={() => remove(it.id)}
-              />
-            ))}
+      {past.length > 0 && (
+        <details className="golive-past-section">
+          <summary className="golive-past-summary">{past.length} past</summary>
+          <div className="golive-scroll golive-scroll-past">
+            {past.slice().reverse().map((e) => {
+              const d = new Date(e.goLiveDate + "T00:00:00");
+              return (
+                <a key={e.id} href="/deliverables" className="golive-card golive-card-past">
+                  <div className="golive-card-date">
+                    <span className="golive-card-day">{d.toLocaleDateString("en-US", { weekday: "short" })}</span>
+                    <span className="golive-card-num">{d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
+                  </div>
+                  <div className="golive-card-body">
+                    <span className="golive-card-brand">{e.brand}</span>
+                    <div className="golive-card-chips">
+                      {e.deliverableNames.map((n, i) => (
+                        <span key={i} className="golive-card-chip">{n}</span>
+                      ))}
+                    </div>
+                  </div>
+                </a>
+              );
+            })}
           </div>
         </details>
       )}
@@ -1131,11 +1050,11 @@ export function DashboardView() {
 
   return (
     <div className="dashboard-page">
-      {/* Reel Schedule — full width */}
-      <TodayReels />
+      {/* Go Live Dates — top priority */}
+      <GoLiveDates />
 
-      {/* To Shoot — full width below */}
-      <ToShoot />
+      {/* Reel Schedule */}
+      <TodayReels />
 
       {/* Priority Videos */}
       <PriorityVideos />

@@ -731,6 +731,29 @@ function DeliverableModal({
             </div>
           </div>
 
+          {/* Go-live date */}
+          <div className="dl-modal-section">
+            <div className="dl-modal-section-title">Go-live date</div>
+            <div className="dl-golive-input-row">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.45, flexShrink: 0 }}>
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <input
+                type="date"
+                className="dl-golive-date-input"
+                value={local.goLiveDate ?? ""}
+                onChange={(e) => setLocal((prev) => ({ ...prev, goLiveDate: e.target.value || undefined }))}
+              />
+              {local.goLiveDate && (
+                <button
+                  className="dl-golive-clear-btn"
+                  onClick={() => setLocal((prev) => ({ ...prev, goLiveDate: undefined }))}
+                  title="Clear date"
+                >×</button>
+              )}
+            </div>
+          </div>
+
           {/* Notes (editable) */}
           <div className="dl-modal-section">
             <div className="dl-modal-section-title">Notes</div>
@@ -1210,6 +1233,17 @@ function DeliverableCard({
                 <Highlight text={row.note} query={search} />
               </span>
             )}
+          </div>
+        )}
+
+        {/* Go-live date badge */}
+        {row.goLiveDate && (
+          <div className="dl-golive-badge">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span className="dl-golive-label">Go live</span>
+            <span className="dl-golive-date">{new Date(row.goLiveDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</span>
           </div>
         )}
 

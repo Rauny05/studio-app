@@ -8482,3 +8482,241 @@ details[open] .pv-done-summary svg { transform: rotate(90deg); }
 }
 
 .dl-confirm-complete-btn:hover { background: #16a34a; }
+
+/* ── Go-live date — card badge ───────────────────────────────────────────── */
+
+.dl-golive-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgba(59, 130, 246, 0.07);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  margin-top: 4px;
+  width: fit-content;
+}
+
+.dl-golive-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dl-golive-date {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+/* ── Go-live date — modal input ──────────────────────────────────────────── */
+
+.dl-golive-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dl-golive-date-input {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface, rgba(255,255,255,0.03));
+  color: var(--app-text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+  color-scheme: dark;
+}
+
+.dl-golive-date-input:focus { border-color: rgba(59, 130, 246, 0.5); }
+
+.dl-golive-clear-btn {
+  font-size: 16px;
+  line-height: 1;
+  color: var(--app-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.dl-golive-clear-btn:hover { opacity: 1; color: #ef4444; }
+
+/* ── Go Live Dates dashboard widget ─────────────────────────────────────── */
+
+.golive-widget {
+  background: var(--app-card, var(--app-bg));
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.golive-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.golive-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.golive-icon { font-size: 22px; }
+
+.golive-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--app-text);
+  margin: 0 0 2px;
+}
+
+.golive-sub {
+  font-size: 12px;
+  color: var(--app-text-muted);
+  margin: 0;
+}
+
+.golive-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.golive-scroll::-webkit-scrollbar { display: none; }
+
+.golive-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 140px;
+  max-width: 180px;
+  flex-shrink: 0;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface, rgba(255,255,255,0.03));
+  text-decoration: none;
+  transition: border-color 0.18s, background 0.18s;
+}
+
+.golive-card:hover {
+  border-color: rgba(96, 165, 250, 0.35);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.golive-card-today {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.golive-card-today:hover {
+  border-color: rgba(34, 197, 94, 0.6);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.golive-card-past {
+  opacity: 0.55;
+}
+
+.golive-card-date {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.golive-card-day {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--app-text-muted);
+}
+
+.golive-card-today .golive-card-day { color: #4ade80; }
+
+.golive-card-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--app-text);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.golive-card-today .golive-card-num { color: #22c55e; }
+
+.golive-card-countdown {
+  font-size: 10px;
+  color: var(--app-text-muted);
+  margin-top: 2px;
+}
+
+.golive-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.golive-card-brand {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--app-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.golive-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.golive-card-chip {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--app-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.golive-empty {
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+  padding: 12px 4px;
+  font-style: italic;
+}
+
+.golive-past-section { margin-top: 12px; }
+
+.golive-past-summary {
+  font-size: 11.5px;
+  color: var(--app-text-muted);
+  cursor: pointer;
+  list-style: none;
+  padding: 4px 0;
+  opacity: 0.6;
+}
+
+.golive-past-summary:hover { opacity: 1; }
+
+.golive-scroll-past { margin-top: 8px; }
