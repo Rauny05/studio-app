@@ -5131,6 +5131,54 @@ html[data-theme="light"] [data-status="done"]            { --s-color: #15803d; -
   padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
+/* Notification dot on Settings icon */
+.bottom-nav-notif-dot {
+  position: absolute;
+  top: 1px;
+  right: 0px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+  border: 1.5px solid var(--app-surface);
+}
+
+/* Push nudge bar above bottom nav */
+.bottom-nav-push-nudge {
+  display: none;
+  position: fixed;
+  bottom: 64px;
+  left: 0;
+  right: 0;
+  z-index: 299;
+  padding: 10px 16px;
+  background: rgba(245, 158, 11, 0.12);
+  border-top: 1px solid rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+  font-size: 12.5px;
+  font-weight: 600;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  text-align: center;
+  border: none;
+  width: 100%;
+}
+
+/* Show nudge only when bottom nav is visible (native PWA or mobile) */
+[data-native="true"] .bottom-nav-push-nudge {
+  display: flex;
+}
+
+@media (max-width: 768px) {
+  .bottom-nav-push-nudge {
+    display: flex;
+  }
+}
+
 /* Lift FAB above bottom nav in native app */
 [data-native="true"] .quick-add-fab {
   bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 16px);
