@@ -1,4 +1,10 @@
 {
   "buildCommand": "node deploy.mjs && next build",
-  "alias": ["rmmedia-studio.vercel.app"]
+  "alias": ["rmmedia-studio.vercel.app"],
+  "crons": [
+    {
+      "path": "/api/push/golive-reminders",
+      "schedule": "30 2 * * *"
+    }
+  ]
 }
