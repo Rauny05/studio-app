@@ -1,12 +1,22 @@
 "use client";
 import { ConnectVault } from "@/components/vault/ConnectVault";
 import { usePush } from "@/hooks/use-push";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function PushNotificationsSection() {
   const { state, subscribe, unsubscribe } = usePush();
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<"idle" | "ok" | "error">("idle");
+  const [ntfyTopic, setNtfyTopic] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (state === "unsupported") {
+      fetch("/api/push/ntfy-info")
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => { if (d?.topic) setNtfyTopic(d.topic); })
+        .catch(() => {});
+    }
+  }, [state]);
 
   async function sendTest() {
     setTesting(true);
@@ -37,12 +47,83 @@ function PushNotificationsSection() {
       </h3>
       <p style={{ fontSize: 13, color: "var(--app-text-muted)", margin: "0 0 14px", lineHeight: 1.5 }}>
         Get reminded at <strong>8:00 AM</strong> when a campaign is going live today or tomorrow.
-        Enable notifications, then use the bell icon in the top bar to toggle anytime.
       </p>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         {state === "unsupported" && (
-          <span style={{ fontSize: 13, color: "var(--app-text-muted)" }}>Not supported in this browser.</span>
+          <div style={{ width: "100%" }}>
+            <p style={{ fontSize: 13, color: "#f59e0b", margin: "0 0 16px", lineHeight: 1.5, display: "flex", alignItems: "flex-start", gap: 6 }}>
+              <span>⚠️</span>
+              <span>Brave and Chrome on iOS don&apos;t support Web Push — Apple only allows it in Safari. Use one of the options below to still get reminders.</span>
+            </p>
+
+            {/* Option 1: ntfy app */}
+            <div style={{
+              background: "var(--app-surface)",
+              border: "1px solid var(--app-border)",
+              borderRadius: 10,
+              padding: "14px 16px",
+              marginBottom: 10,
+            }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--app-text)", margin: "0 0 4px" }}>
+                Option 1 — ntfy app <span style={{ fontWeight: 400, color: "var(--app-text-muted)" }}>(easiest)</span>
+              </p>
+              <p style={{ fontSize: 12, color: "var(--app-text-muted)", margin: "0 0 10px", lineHeight: 1.6 }}>
+                Install the free ntfy app, then subscribe to your private channel to receive go-live reminders on any browser or device.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <a
+                  href="https://apps.apple.com/app/ntfy/id1625396347"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="kanban-btn-primary"
+                  style={{ fontSize: 12, textDecoration: "none" }}
+                >
+                  Get ntfy on App Store ↗
+                </a>
+                {ntfyTopic && (
+                  <a
+                    href={`https://ntfy.sh/${ntfyTopic}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="kanban-btn-secondary"
+                    style={{ fontSize: 12, textDecoration: "none" }}
+                  >
+                    Subscribe to channel ↗
+                  </a>
+                )}
+              </div>
+              {ntfyTopic && (
+                <p style={{ fontSize: 11, color: "var(--app-text-muted)", marginTop: 8, fontFamily: "monospace" }}>
+                  Channel: ntfy.sh/{ntfyTopic}
+                </p>
+              )}
+            </div>
+
+            {/* Option 2: Safari PWA */}
+            <div style={{
+              background: "var(--app-surface)",
+              border: "1px solid var(--app-border)",
+              borderRadius: 10,
+              padding: "14px 16px",
+            }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--app-text)", margin: "0 0 4px" }}>
+                Option 2 — Safari PWA <span style={{ fontWeight: 400, color: "var(--app-text-muted)" }}>(native feel)</span>
+              </p>
+              <p style={{ fontSize: 12, color: "var(--app-text-muted)", margin: "0 0 10px", lineHeight: 1.6 }}>
+                Open this app in Safari → tap the Share icon → <strong style={{ color: "var(--app-text)" }}>Add to Home Screen</strong>. Launch from your home screen and enable notifications from Settings above.
+              </p>
+              <a
+                href={typeof window !== "undefined" ? window.location.origin : "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="kanban-btn-secondary"
+                style={{ fontSize: 12, textDecoration: "none" }}
+              >
+                Open in Safari ↗
+              </a>
+            </div>
+          </div>
         )}
         {state === "denied" && (
           <span style={{ fontSize: 13, color: "#ef4444" }}>Notifications blocked — allow them in browser settings.</span>
