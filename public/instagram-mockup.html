@@ -159,6 +159,14 @@
     .ig-scroll { height: 730px; overflow-y: auto; scroll-behavior: smooth; }
     .ig-scroll::-webkit-scrollbar { display: none; }
 
+    /* Grid drag-and-drop */
+    .ig-cell[draggable="true"], .igd-cell[draggable="true"] { cursor: grab; }
+    .ig-cell[draggable="true"]:active, .igd-cell[draggable="true"]:active { cursor: grabbing; }
+    .ig-cell.drag-src, .igd-cell.drag-src { opacity: 0.3; transition: opacity 0.15s; }
+    .ig-cell.drag-over, .igd-cell.drag-over { outline: 2.5px solid #6366f1; outline-offset: -2.5px; z-index: 1; }
+    /* Canvas item dragged back to grid */
+    .ig-cell.canvas-drop-target, .igd-cell.canvas-drop-target { outline: 2.5px solid #f59e0b; outline-offset: -2.5px; z-index: 1; background: rgba(245,158,11,0.08); }
+
     /* ── Desktop Browser Frame ── */
     .desktop-wrap { display: none; }
     .browser-outer { border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px #3a3a3a, 0 40px 100px rgba(0,0,0,0.8); }
@@ -274,6 +282,135 @@
     input[type="file"] { display: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+    /* ── Free Canvas Panel ── */
+    .canvas-panel {
+      width: 360px;
+      min-width: 260px;
+      max-width: 600px;
+      background: #0c0c0c;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .canvas-header {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 8px;
+    }
+    .canvas-header-left { display: flex; align-items: center; gap: 8px; }
+    .canvas-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+    .canvas-badge { font-size: 10px; font-weight: 600; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 2px 7px; border-radius: 20px; }
+    .canvas-header-right { display: flex; gap: 6px; align-items: center; }
+    .canvas-icon-btn {
+      width: 26px; height: 26px; border-radius: 6px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 12px; transition: all 0.15s;
+    }
+    .canvas-icon-btn:hover { background: var(--border); color: var(--text); }
+    .canvas-clear-btn {
+      font-size: 10px; font-weight: 600; padding: 4px 10px;
+      border-radius: 6px; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer; transition: all 0.15s; letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .canvas-clear-btn:hover { background: #3a1a1a; border-color: #6b2020; color: #f87171; }
+
+    /* Resize handle between preview and canvas */
+    .canvas-resize-handle {
+      position: absolute; left: -4px; top: 0; bottom: 0;
+      width: 8px; cursor: col-resize; z-index: 20;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .canvas-resize-handle::after {
+      content: '';
+      width: 2px; height: 40px;
+      background: var(--border);
+      border-radius: 1px;
+      transition: background 0.15s;
+    }
+    .canvas-resize-handle:hover::after { background: var(--accent); }
+
+    /* Canvas drop area */
+    .canvas-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-image: radial-gradient(circle, #222 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .canvas-area.drop-active {
+      background-image: radial-gradient(circle, #3a3a6a 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .canvas-empty {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px; pointer-events: none;
+      opacity: 0.35;
+    }
+    .canvas-empty svg { opacity: 0.5; }
+    .canvas-empty p { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.5; }
+
+    /* Canvas items */
+    .canvas-item {
+      position: absolute;
+      user-select: none;
+      touch-action: none;
+    }
+    .canvas-item-inner {
+      position: relative;
+      border-radius: 6px;
+      overflow: visible;
+      transition: box-shadow 0.15s;
+    }
+    .canvas-item-inner:hover { box-shadow: 0 0 0 2px var(--accent); }
+    .canvas-item-inner img {
+      display: block;
+      border-radius: 6px;
+      pointer-events: none;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+    }
+    .canvas-item-del {
+      position: absolute; top: -7px; right: -7px;
+      width: 18px; height: 18px;
+      background: #1a1a1a; border: 1px solid #444;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px; color: #ccc; cursor: pointer;
+      opacity: 0; transition: opacity 0.15s;
+      z-index: 10;
+    }
+    .canvas-item-inner:hover .canvas-item-del { opacity: 1; }
+    .canvas-item-type {
+      position: absolute; bottom: 5px; left: 5px;
+      font-size: 8px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: rgba(0,0,0,0.65);
+      color: #fff; padding: 2px 5px; border-radius: 3px;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .canvas-item-inner:hover .canvas-item-type { opacity: 1; }
+    .canvas-item-resize {
+      position: absolute; bottom: -5px; right: -5px;
+      width: 14px; height: 14px;
+      background: var(--accent); border-radius: 3px;
+      cursor: se-resize; opacity: 0; transition: opacity 0.15s;
+      z-index: 10;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .canvas-item-resize svg { pointer-events: none; }
+    .canvas-item-inner:hover .canvas-item-resize { opacity: 1; }
+    .canvas-item.is-dragging .canvas-item-inner { box-shadow: 0 0 0 2px var(--accent), 0 16px 48px rgba(0,0,0,0.7); opacity: 0.85; }
   </style>
 </head>
 <body>
@@ -575,6 +712,35 @@
 
   </div><!-- /preview-panel -->
 
+  <!-- ── Free Canvas Panel ── -->
+  <div class="canvas-panel" id="canvasPanel">
+    <div class="canvas-resize-handle" id="canvasResizeHandle"></div>
+    <div class="canvas-header">
+      <div class="canvas-header-left">
+        <span class="canvas-title">Free Canvas</span>
+        <span class="canvas-badge" id="canvasBadge">0 items</span>
+      </div>
+      <div class="canvas-header-right">
+        <div class="canvas-icon-btn" id="canvasSnap" title="Snap to grid">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </div>
+        <button class="canvas-clear-btn" onclick="clearCanvas()">Clear all</button>
+      </div>
+    </div>
+    <div class="canvas-area" id="canvasArea">
+      <div class="canvas-empty" id="canvasEmpty">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <path d="M3 9h18M9 21V9"/>
+        </svg>
+        <p>Drag images here<br>to arrange freely</p>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /app-body -->
 
 <input type="file" id="avatarInput" accept="image/*">
@@ -583,14 +749,18 @@
 <script>
 const state = {
   avatarSrc: null,
-  images: [], reels: [],
+  grid: [],   // unified: [{src, id, type:'post'|'reel'}]
+  canvasItems: [], // [{cid, src, type, x, y, w}] — persists independently
   activeContentType: 'posts',
   activeIgTab: { mobile: 'posts', desktop: 'posts' },
   device: 'mobile',
   darkMode: false, showFrame: true, storyRing: true, showHighlights: true,
+  snapToGrid: false,
 };
 
 let dragSrcIndex = null;
+let gridDragId = null;
+let dragFromGridId = null; // id of item dragged from grid (for removal on canvas drop)
 function uid() { return Math.random().toString(36).slice(2); }
 function readFile(f) { return new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result); fr.readAsDataURL(f); }); }
 
@@ -701,33 +871,52 @@ uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag
 uploadZone.addEventListener('drop', async e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); await addImages(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))); });
 
 async function addImages(files) {
-  const list = state.activeContentType === 'reels' ? state.reels : state.images;
-  for (const f of files) { if (list.length >= 30) break; list.push({ src: await readFile(f), id: uid() }); }
+  const type = state.activeContentType === 'reels' ? 'reel' : 'post';
+  for (const f of files) {
+    if (state.grid.length >= 30) break;
+    state.grid.push({ src: await readFile(f), id: uid(), type });
+  }
   renderThumbTray(); renderGrid('mobile'); renderGrid('desktop');
 }
 
 // ── Thumb tray ──
 function renderThumbTray() {
-  const list = state.activeContentType === 'reels' ? state.reels : state.images;
+  const type = state.activeContentType === 'reels' ? 'reel' : 'post';
+  const filtered = state.grid.filter(item => item.type === type);
   const tray = document.getElementById('thumbTray');
   const hint = document.getElementById('dragHint');
   tray.innerHTML = '';
-  hint.style.display = list.length > 1 ? 'block' : 'none';
-  list.forEach((item, i) => {
+  hint.style.display = filtered.length > 1 ? 'block' : 'none';
+  filtered.forEach((item, i) => {
     const chip = document.createElement('div');
-    chip.className = 'thumb-chip'; chip.draggable = true; chip.dataset.index = i;
+    chip.className = 'thumb-chip'; chip.draggable = true;
     const img = document.createElement('img'); img.src = item.src; chip.appendChild(img);
     const del = document.createElement('div'); del.className = 'del'; del.textContent = '✕';
-    del.addEventListener('click', e => { e.stopPropagation(); list.splice(i, 1); renderThumbTray(); renderGrid('mobile'); renderGrid('desktop'); });
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = state.grid.findIndex(g => g.id === item.id);
+      if (idx !== -1) state.grid.splice(idx, 1);
+      renderThumbTray(); renderGrid('mobile'); renderGrid('desktop');
+    });
     chip.appendChild(del);
-    chip.addEventListener('dragstart', () => { dragSrcIndex = i; chip.classList.add('dragging'); });
+    chip.addEventListener('dragstart', e => {
+      dragSrcIndex = i;
+      chip.classList.add('dragging');
+      e.dataTransfer.setData('x-ig-item', JSON.stringify({ src: item.src, type: item.type, id: item.id, source: 'tray' }));
+      e.dataTransfer.effectAllowed = 'copyMove';
+    });
     chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
     chip.addEventListener('dragover', e => { e.preventDefault(); chip.classList.add('drag-over-target'); });
     chip.addEventListener('dragleave', () => chip.classList.remove('drag-over-target'));
     chip.addEventListener('drop', e => {
       e.preventDefault(); chip.classList.remove('drag-over-target');
       if (dragSrcIndex === null || dragSrcIndex === i) return;
-      list.splice(i, 0, list.splice(dragSrcIndex, 1)[0]);
+      // Swap the two items' positions within state.grid
+      const srcId = filtered[dragSrcIndex].id;
+      const dstId = filtered[i].id;
+      const si = state.grid.findIndex(g => g.id === srcId);
+      const di = state.grid.findIndex(g => g.id === dstId);
+      [state.grid[si], state.grid[di]] = [state.grid[di], state.grid[si]];
       renderThumbTray(); renderGrid('mobile'); renderGrid('desktop');
     });
     tray.appendChild(chip);
@@ -768,28 +957,62 @@ function buildGrid(container, tab, cellClass) {
   container.innerHTML = '';
   const isReels = tab === 'reels';
   const isMobile = cellClass === 'ig-cell';
-
-  // Reels tab: only reels. Posts tab: posts + reels (reels appear in posts grid on IG, posts don't appear in reels)
-  const list = isReels ? state.reels : [...state.images, ...state.reels];
-  const reelIdSet = new Set(state.reels.map(r => r.id));
+  // Posts tab: all items. Reels tab: only reels.
+  const list = isReels ? state.grid.filter(i => i.type === 'reel') : [...state.grid];
 
   const total = 12;
   for (let i = 0; i < total; i++) {
     const item = i < list.length ? list[i] : null;
-    const itemIsReel = item && reelIdSet.has(item.id);
-    // Posts grid always uses 3:4; reels grid uses 9:16
     const aspectClass = isReels ? 'reels-cell' : 'posts-cell';
     const cell = document.createElement('div');
     cell.className = `${cellClass} ${aspectClass}`;
+
     if (item) {
+      cell.draggable = true;
+      cell.dataset.itemId = item.id;
+
       const img = document.createElement('img'); img.src = item.src; cell.appendChild(img);
-      // Show reel badge whenever the item is a reel (both in posts grid and reels grid)
-      if (itemIsReel) {
+
+      if (item.type === 'reel') {
         const badge = document.createElement('div');
         badge.className = isMobile ? 'ig-reel-badge' : 'igd-reel-badge';
         badge.innerHTML = `<svg width="${isMobile?14:16}" height="${isMobile?14:16}" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>`;
         cell.appendChild(badge);
       }
+
+      // ── Cell drag events ──
+      cell.addEventListener('dragstart', e => {
+        gridDragId = item.id;
+        dragFromGridId = item.id;
+        cell.classList.add('drag-src');
+        e.dataTransfer.setData('x-ig-item', JSON.stringify({ src: item.src, type: item.type, id: item.id, source: 'grid' }));
+        e.dataTransfer.effectAllowed = 'copyMove';
+      });
+      cell.addEventListener('dragend', () => {
+        cell.classList.remove('drag-src');
+        gridDragId = null;
+        dragFromGridId = null;
+        container.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
+      });
+      cell.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (gridDragId && gridDragId !== item.id) cell.classList.add('drag-over');
+      });
+      cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
+      cell.addEventListener('drop', e => {
+        e.preventDefault();
+        cell.classList.remove('drag-over');
+        if (!gridDragId || gridDragId === item.id) return;
+        // Swap the two items in state.grid
+        const si = state.grid.findIndex(g => g.id === gridDragId);
+        const di = state.grid.findIndex(g => g.id === item.id);
+        if (si === -1 || di === -1) return;
+        // Reels tab: only allow swap between reels
+        if (isReels && state.grid[si].type !== 'reel') return;
+        [state.grid[si], state.grid[di]] = [state.grid[di], state.grid[si]];
+        renderGrid('mobile'); renderGrid('desktop'); renderThumbTray();
+      });
     } else {
       const ph = document.createElement('div');
       ph.className = `${cellClass.replace('-cell','')}-cell-placeholder`;
@@ -904,6 +1127,261 @@ document.getElementById('inputUsername').value = 'yourname';
 document.getElementById('inputName').value = 'Your Name';
 // Auto-fit zoom on load once layout is ready
 window.addEventListener('load', fitZoom);
+
+// ══════════════════════════════════════════
+// ── Free Canvas ──
+// ══════════════════════════════════════════
+
+const canvasArea = document.getElementById('canvasArea');
+let snapEnabled = false;
+const SNAP = 20; // dot grid size
+
+function snapVal(v) { return snapEnabled ? Math.round(v / SNAP) * SNAP : v; }
+
+// ── Drop from tray / grid onto canvas ──
+canvasArea.addEventListener('dragover', e => {
+  if (!e.dataTransfer.types.includes('x-ig-item')) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  canvasArea.classList.add('drop-active');
+});
+canvasArea.addEventListener('dragleave', e => {
+  if (!canvasArea.contains(e.relatedTarget)) canvasArea.classList.remove('drop-active');
+});
+canvasArea.addEventListener('drop', e => {
+  e.preventDefault();
+  canvasArea.classList.remove('drop-active');
+  const raw = e.dataTransfer.getData('x-ig-item');
+  if (!raw) return;
+  let payload; try { payload = JSON.parse(raw); } catch { return; }
+
+  // If dragged from the grid, remove it from state.grid
+  if (payload.source === 'grid' && payload.id) {
+    const idx = state.grid.findIndex(g => g.id === payload.id);
+    if (idx !== -1) state.grid.splice(idx, 1);
+    dragFromGridId = null;
+    renderGrid('mobile'); renderGrid('desktop'); renderThumbTray();
+  }
+
+  const rect = canvasArea.getBoundingClientRect();
+  const defaultW = payload.type === 'reel' ? 90 : 110;
+  const x = snapVal(e.clientX - rect.left - defaultW / 2);
+  const y = snapVal(e.clientY - rect.top - (payload.type === 'reel' ? 160 : 147) / 2);
+  addCanvasItem(payload.src, payload.type, x, y, defaultW);
+});
+
+// ── Add a canvas item ──
+function addCanvasItem(src, type, x, y, w) {
+  const cid = uid();
+  const aspectH = type === 'reel' ? (w * 16 / 9) : (w * 4 / 3);
+  const item = { cid, src, type, x: Math.max(0, x), y: Math.max(0, y), w };
+  state.canvasItems.push(item);
+  renderCanvasItem(item);
+  updateCanvasBadge();
+}
+
+// ── Render a single canvas item DOM element ──
+function renderCanvasItem(item) {
+  const el = document.createElement('div');
+  el.className = 'canvas-item';
+  el.dataset.cid = item.cid;
+  el.style.left = item.x + 'px';
+  el.style.top  = item.y + 'px';
+  el.style.width = item.w + 'px';
+
+  const inner = document.createElement('div');
+  inner.className = 'canvas-item-inner';
+
+  const img = document.createElement('img');
+  const h = item.type === 'reel' ? item.w * 16 / 9 : item.w * 4 / 3;
+  img.src = item.src;
+  img.style.width = '100%';
+  img.style.height = Math.round(h) + 'px';
+  img.style.objectFit = 'cover';
+  inner.appendChild(img);
+
+  // Type badge
+  const badge = document.createElement('div');
+  badge.className = 'canvas-item-type';
+  badge.textContent = item.type === 'reel' ? '▶ Reel' : 'Post';
+  inner.appendChild(badge);
+
+  // Delete btn
+  const del = document.createElement('div');
+  del.className = 'canvas-item-del';
+  del.innerHTML = '✕';
+  del.addEventListener('mousedown', e => { e.stopPropagation(); removeCanvasItem(item.cid); });
+  inner.appendChild(del);
+
+  // Resize handle
+  const resize = document.createElement('div');
+  resize.className = 'canvas-item-resize';
+  resize.innerHTML = `<svg width="7" height="7" viewBox="0 0 8 8" fill="none"><path d="M1 7L7 1M4 7L7 4M7 7V7" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+  inner.appendChild(resize);
+
+  el.appendChild(inner);
+  canvasArea.appendChild(el);
+
+  // ── Move drag (mouse) — floats freely across panels ──
+  inner.addEventListener('mousedown', e => {
+    if (e.target.closest('.canvas-item-del') || e.target.closest('.canvas-item-resize')) return;
+    e.preventDefault();
+
+    const startX = e.clientX, startY = e.clientY;
+    const elRect = el.getBoundingClientRect();
+
+    // Lift element to body so it can cross panel boundaries
+    const offsetX = e.clientX - elRect.left;
+    const offsetY = e.clientY - elRect.top;
+    el.classList.add('is-dragging');
+    el.style.position = 'fixed';
+    el.style.left = elRect.left + 'px';
+    el.style.top  = elRect.top  + 'px';
+    el.style.pointerEvents = 'none'; // see-through for elementFromPoint
+    el.style.zIndex = '9999';
+    el.style.width = item.w + 'px';
+    document.body.appendChild(el);
+
+    let hoveredCell = null;
+
+    const onMove = e => {
+      el.style.left = (e.clientX - offsetX) + 'px';
+      el.style.top  = (e.clientY - offsetY) + 'px';
+
+      // Highlight grid cell underneath
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      const cell  = under?.closest('[data-item-id]');
+      if (cell !== hoveredCell) {
+        hoveredCell?.classList.remove('canvas-drop-target');
+        hoveredCell = cell || null;
+        hoveredCell?.classList.add('canvas-drop-target');
+      }
+    };
+
+    const onUp = e => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      el.classList.remove('is-dragging');
+      el.style.pointerEvents = '';
+      el.style.zIndex = '';
+      hoveredCell?.classList.remove('canvas-drop-target');
+
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      const cell  = under?.closest('[data-item-id]');
+
+      if (cell) {
+        // ── Dropped onto a grid cell → insert into grid, remove from canvas ──
+        el.remove();
+        const targetId  = cell.dataset.itemId;
+        const targetIdx = state.grid.findIndex(g => g.id === targetId);
+        const newItem   = { src: item.src, id: uid(), type: item.type };
+        if (targetIdx !== -1) state.grid.splice(targetIdx, 0, newItem);
+        else state.grid.push(newItem);
+        removeCanvasItem(item.cid);
+        renderGrid('mobile'); renderGrid('desktop'); renderThumbTray();
+      } else {
+        // ── Dropped back on canvas → restore absolute positioning ──
+        el.style.position = 'absolute';
+        el.style.left = '';
+        el.style.top  = '';
+        const canvasRect = canvasArea.getBoundingClientRect();
+        const imgH = item.type === 'reel' ? item.w * 16 / 9 : item.w * 4 / 3;
+        item.x = snapVal(Math.max(0, Math.min(e.clientX - canvasRect.left - offsetX, canvasRect.width  - item.w)));
+        item.y = snapVal(Math.max(0, Math.min(e.clientY - canvasRect.top  - offsetY, canvasRect.height - imgH)));
+        el.style.left = item.x + 'px';
+        el.style.top  = item.y + 'px';
+        canvasArea.appendChild(el);
+      }
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // ── Resize drag ──
+  let isResizing = false, resStartX, resStartW;
+  resize.addEventListener('mousedown', e => {
+    e.preventDefault(); e.stopPropagation();
+    isResizing = true;
+    resStartX = e.clientX; resStartW = item.w;
+    el.style.zIndex = nextZ();
+
+    const onMove = e => {
+      if (!isResizing) return;
+      const delta = e.clientX - resStartX;
+      const minW = 50, maxW = 380;
+      item.w = Math.max(minW, Math.min(resStartW + delta, maxW));
+      el.style.width = item.w + 'px';
+      const newH = item.type === 'reel' ? item.w * 16 / 9 : item.w * 4 / 3;
+      img.style.height = Math.round(newH) + 'px';
+    };
+    const onUp = () => {
+      isResizing = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ── Remove item ──
+function removeCanvasItem(cid) {
+  state.canvasItems = state.canvasItems.filter(i => i.cid !== cid);
+  const el = canvasArea.querySelector(`[data-cid="${cid}"]`);
+  if (el) el.remove();
+  updateCanvasBadge();
+}
+
+// ── Clear all ──
+function clearCanvas() {
+  state.canvasItems = [];
+  canvasArea.querySelectorAll('.canvas-item').forEach(e => e.remove());
+  updateCanvasBadge();
+}
+
+// ── Badge count ──
+function updateCanvasBadge() {
+  const n = state.canvasItems.length;
+  document.getElementById('canvasBadge').textContent = n + (n === 1 ? ' item' : ' items');
+  document.getElementById('canvasEmpty').style.display = n === 0 ? 'flex' : 'none';
+}
+
+// ── Z-index stacking ──
+let _z = 1;
+function nextZ() { return ++_z; }
+
+// ── Snap toggle ──
+document.getElementById('canvasSnap').addEventListener('click', () => {
+  snapEnabled = !snapEnabled;
+  document.getElementById('canvasSnap').style.color = snapEnabled ? 'var(--accent)' : '';
+  document.getElementById('canvasSnap').style.borderColor = snapEnabled ? 'var(--accent)' : '';
+  document.getElementById('canvasSnap').title = snapEnabled ? 'Snap to grid (on)' : 'Snap to grid (off)';
+});
+
+// ── Panel resize handle ──
+(function initPanelResize() {
+  const handle = document.getElementById('canvasResizeHandle');
+  const panel  = document.getElementById('canvasPanel');
+  let dragging = false, startX, startW;
+  handle.addEventListener('mousedown', e => {
+    dragging = true; startX = e.clientX; startW = panel.offsetWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const delta = startX - e.clientX; // dragging left handle: move left = wider
+    const newW = Math.max(240, Math.min(startW + delta, 700));
+    panel.style.width = newW + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
 </script>
 </body>
 </html>

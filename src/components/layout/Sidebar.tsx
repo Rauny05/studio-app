@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -80,70 +80,99 @@ export function Sidebar() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Auto-close sidebar on navigation (mobile)
+  // Close sidebar on navigation (mobile)
   useEffect(() => {
-    if (window.innerWidth < 768) {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
       setSidebarCollapsed(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
+  const closeOnMobile = useCallback(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setSidebarCollapsed(true);
+    }
+  }, [setSidebarCollapsed]);
+
+  const isMobileOpen = mounted && !sidebarCollapsed;
+
   return (
-    <aside
-      className="sidebar"
-      data-collapsed={sidebarCollapsed}
-      aria-label="Main navigation"
-    >
-      {/* Logo */}
-      <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">
-          <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: "-0.5px", lineHeight: 1 }}>RM</span>
-        </div>
-        {!sidebarCollapsed && <span className="sidebar-logo-text">RM Studio</span>}
-      </div>
+    <>
+      {/* Tap-outside backdrop (mobile only) */}
+      {isMobileOpen && (
+        <div
+          className="mobile-nav-backdrop"
+          onClick={() => setSidebarCollapsed(true)}
+          aria-hidden
+        />
+      )}
 
-      {/* Primary nav */}
-      <nav className="sidebar-nav">
-        {nav.filter((item) => {
-          // Admin always sees everything; unloaded session = show all (avoids flicker)
-          if (!mounted || isAdmin || permissions.length === 0) return true;
-          const key = item.href.replace("/", "");
-          // support both full-access ("todos") and view-only ("todos:view")
-          return permissions.includes(key) || permissions.includes(`${key}:view`);
-        }).map((item) => {
-          const active = pathname === item.href || (item.href === "/projects" && pathname.startsWith("/projects/")) || (item.href === "/calendar" && pathname.startsWith("/calendar")) || (item.href === "/deliverables" && pathname.startsWith("/deliverables")) || (item.href === "/todos" && pathname.startsWith("/todos"));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`sidebar-nav-item ${active ? "active" : ""}`}
-              title={sidebarCollapsed ? item.label : undefined}
+      <aside
+        className="sidebar"
+        data-collapsed={sidebarCollapsed}
+        aria-label="Main navigation"
+      >
+        {/* Mobile header with close button */}
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon">
+            <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: "-0.5px", lineHeight: 1 }}>RM</span>
+          </div>
+          {!sidebarCollapsed && <span className="sidebar-logo-text">RM Studio</span>}
+          {!sidebarCollapsed && (
+            <button
+              className="sidebar-mobile-close"
+              onClick={() => setSidebarCollapsed(true)}
+              aria-label="Close menu"
             >
-              <span className="sidebar-nav-icon">{item.icon}</span>
-              {!sidebarCollapsed && <span className="sidebar-nav-label">{item.label}</span>}
-            </Link>
-          );
-        })}
-        {/* Admin link — only visible to admin */}
-        {mounted && isAdmin && (
-          <Link
-            href="/admin"
-            className={`sidebar-nav-item ${pathname.startsWith("/admin") ? "active" : ""}`}
-            title={sidebarCollapsed ? "Admin" : undefined}
-          >
-            <span className="sidebar-nav-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
-            </span>
-            {!sidebarCollapsed && <span className="sidebar-nav-label">Team Access</span>}
-          </Link>
-        )}
-      </nav>
+            </button>
+          )}
+        </div>
 
-    </aside>
+        {/* Primary nav */}
+        <nav className="sidebar-nav">
+          {nav.filter((item) => {
+            if (!mounted || isAdmin || permissions.length === 0) return true;
+            const key = item.href.replace("/", "");
+            return permissions.includes(key) || permissions.includes(`${key}:view`);
+          }).map((item) => {
+            const active = pathname === item.href || (item.href === "/projects" && pathname.startsWith("/projects/")) || (item.href === "/calendar" && pathname.startsWith("/calendar")) || (item.href === "/deliverables" && pathname.startsWith("/deliverables")) || (item.href === "/todos" && pathname.startsWith("/todos"));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`sidebar-nav-item ${active ? "active" : ""}`}
+                title={sidebarCollapsed ? item.label : undefined}
+                onClick={closeOnMobile}
+              >
+                <span className="sidebar-nav-icon">{item.icon}</span>
+                {!sidebarCollapsed && <span className="sidebar-nav-label">{item.label}</span>}
+              </Link>
+            );
+          })}
+          {/* Admin link */}
+          {mounted && isAdmin && (
+            <Link
+              href="/admin"
+              className={`sidebar-nav-item ${pathname.startsWith("/admin") ? "active" : ""}`}
+              title={sidebarCollapsed ? "Admin" : undefined}
+              onClick={closeOnMobile}
+            >
+              <span className="sidebar-nav-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </span>
+              {!sidebarCollapsed && <span className="sidebar-nav-label">Team Access</span>}
+            </Link>
+          )}
+        </nav>
+      </aside>
+    </>
   );
 }

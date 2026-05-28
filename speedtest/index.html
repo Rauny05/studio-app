@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SpeedTest — Internet Speed Test</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#080d1a;
+  --bg2:#060a14;
+  --teal:#38bdf8;
+  --teal-glow:rgba(56,189,248,0.55);
+  --teal-soft:rgba(56,189,248,0.15);
+  --white:#ffffff;
+  --muted:rgba(255,255,255,0.45);
+  --muted2:rgba(255,255,255,0.2);
+  --border:rgba(255,255,255,0.07);
+}
+
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--white);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ── NAV ── */
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;height:52px;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  background:rgba(8,13,26,0.98);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.nav-logo{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--white)}
+.nav-logo-icon{width:24px;height:24px;flex-shrink:0}
+.nav-logo-text{
+  font-size:13.5px;font-weight:700;letter-spacing:2.5px;
+  text-transform:uppercase;color:var(--white);
+}
+.nav-logo-text b{color:var(--teal)}
+.nav-right{display:flex;align-items:center;gap:1px}
+.nav-link{
+  display:flex;align-items:center;gap:4px;
+  padding:6px 10px;border-radius:6px;
+  border:none;background:none;
+  color:rgba(255,255,255,0.65);
+  font-size:13px;font-weight:400;
+  cursor:pointer;text-decoration:none;font-family:inherit;
+  transition:color .15s,background .15s;
+  white-space:nowrap;
+}
+.nav-link:hover{color:var(--white);background:rgba(255,255,255,0.06)}
+.nav-link svg{width:14px;height:14px;flex-shrink:0}
+.nav-icon{
+  width:32px;height:32px;border-radius:50%;
+  border:none;background:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:rgba(255,255,255,0.55);transition:all .15s;
+}
+.nav-icon:hover{color:var(--white);background:rgba(255,255,255,0.07)}
+.nav-icon svg{width:16px;height:16px}
+
+/* ── SUB NAV ── */
+.sub-nav{
+  display:flex;align-items:center;justify-content:center;gap:28px;
+  padding:13px 0;
+  border-bottom:1px solid var(--border);
+}
+.sub-link{
+  display:flex;align-items:center;gap:6px;
+  background:none;border:none;cursor:pointer;font-family:inherit;
+  font-size:12px;font-weight:600;letter-spacing:1.2px;
+  text-transform:uppercase;color:rgba(255,255,255,0.55);
+  transition:color .15s;padding:2px 0;
+}
+.sub-link:hover{color:rgba(255,255,255,0.85)}
+.sub-link.active{color:var(--teal)}
+.sub-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);flex-shrink:0}
+.sub-link svg{width:13px;height:13px}
+
+/* ── PANELS ── */
+#panel-main,#panel-results{display:none}
+#panel-main{display:flex;flex-direction:column}
+
+/* ── MAIN ── */
+.gauge-section{
+  display:flex;flex-direction:column;align-items:center;
+  padding:36px 20px 28px;
+  background:var(--bg);
+}
+
+/* ── GAUGE ── */
+.gauge-outer{
+  width:288px;height:288px;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.09);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+
+.gauge-ring{
+  width:200px;height:200px;border-radius:50%;
+  border:2px solid var(--teal);
+  box-shadow:
+    0 0 18px 4px rgba(56,189,248,0.65),
+    0 0 50px 10px rgba(56,189,248,0.22),
+    0 0 100px 20px rgba(56,189,248,0.08),
+    inset 0 0 18px 2px rgba(56,189,248,0.06);
+  background:radial-gradient(circle at 50% 50%,#0e1f36 0%,#080d1a 100%);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;position:relative;
+  transition:box-shadow .35s,border-color .35s;
+}
+.gauge-ring:hover{
+  box-shadow:
+    0 0 24px 6px rgba(56,189,248,0.8),
+    0 0 70px 15px rgba(56,189,248,0.3),
+    0 0 130px 30px rgba(56,189,248,0.1),
+    inset 0 0 24px 4px rgba(56,189,248,0.09);
+}
+.gauge-ring.running{
+  animation:ringPulse 1.6s ease-in-out infinite;
+}
+@keyframes ringPulse{
+  0%,100%{box-shadow:0 0 18px 4px rgba(56,189,248,.65),0 0 50px 10px rgba(56,189,248,.22),0 0 100px 20px rgba(56,189,248,.08),inset 0 0 18px 2px rgba(56,189,248,.06)}
+  50%{box-shadow:0 0 30px 8px rgba(56,189,248,.9),0 0 80px 20px rgba(56,189,248,.4),0 0 150px 40px rgba(56,189,248,.12),inset 0 0 30px 6px rgba(56,189,248,.1)}
+}
+
+/* Speed display inside ring (during test) */
+.speed-inside{
+  display:flex;flex-direction:column;align-items:center;
+  position:absolute;
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.speed-inside.show{opacity:1;pointer-events:auto}
+.si-num{
+  font-size:46px;font-weight:700;letter-spacing:-1.5px;
+  line-height:1;font-variant-numeric:tabular-nums;
+  color:var(--white);
+}
+.si-unit{font-size:12px;color:var(--muted);letter-spacing:1px;margin-top:5px}
+
+.go-text{
+  font-size:26px;font-weight:300;letter-spacing:8px;text-indent:8px;
+  color:var(--teal);background:none;border:none;cursor:pointer;
+  font-family:inherit;transition:opacity .3s,letter-spacing .2s;
+  position:absolute;
+}
+
+/* Phase label above gauge */
+.phase-lbl{
+  position:absolute;top:-30px;left:50%;transform:translateX(-50%);
+  font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:var(--muted);white-space:nowrap;
+  opacity:0;transition:opacity .25s;
+}
+.phase-lbl.show{opacity:1}
+
+.go-sub{
+  margin-top:16px;font-size:11.5px;color:var(--muted);
+  text-align:center;min-height:16px;letter-spacing:.2px;
+}
+
+/* ── SERVER ROW ── */
+.server-row{
+  display:flex;align-items:flex-start;gap:64px;
+  padding:18px 20px 0;justify-content:center;
+}
+.srv-col{display:flex;align-items:flex-start;gap:11px}
+.srv-circle{
+  width:34px;height:34px;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.14);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px;
+}
+.srv-circle svg{width:15px;height:15px;color:rgba(255,255,255,0.5)}
+.srv-info{display:flex;flex-direction:column;gap:2px}
+.srv-name{font-size:13px;font-weight:600;color:var(--white);line-height:1.3}
+.srv-sub{font-size:11.5px;color:var(--muted)}
+.srv-change{
+  font-size:11.5px;color:var(--teal);background:none;border:none;
+  cursor:pointer;padding:0;font-family:inherit;font-weight:500;
+  text-align:left;transition:opacity .15s;
+}
+.srv-change:hover{opacity:.75}
+
+/* ── CONNECTIONS ── */
+.conn-section{
+  display:flex;flex-direction:column;align-items:center;
+  gap:10px;padding:20px 0 30px;
+}
+.conn-label{
+  font-size:10px;font-weight:600;letter-spacing:2.5px;
+  text-transform:uppercase;color:var(--muted);
+}
+.conn-toggle-row{display:flex;align-items:center;gap:10px}
+.conn-side-label{font-size:13px;color:rgba(255,255,255,0.7)}
+.tgl{
+  width:48px;height:26px;border-radius:13px;
+  background:rgba(255,255,255,0.1);
+  position:relative;cursor:pointer;transition:background .2s;
+}
+.tgl.on{background:var(--teal)}
+.tgl-thumb{
+  width:20px;height:20px;border-radius:50%;background:white;
+  position:absolute;top:3px;left:3px;
+  transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.35);
+}
+.tgl.on .tgl-thumb{left:25px}
+
+/* ── DIVIDER ── */
+.sect-divider{
+  width:100%;height:1px;
+  background:rgba(255,255,255,0.055);
+}
+
+/* ── FOOTER ── */
+.footer-section{
+  background:var(--bg2);
+  display:flex;flex-direction:column;align-items:center;
+  padding:28px 24px 40px;flex:1;width:100%;
+}
+
+/* POST RESULTS STRIP */
+.results-strip{
+  display:flex;align-items:stretch;justify-content:center;
+  max-width:400px;width:100%;margin-bottom:0;padding:10px 0 16px;
+  opacity:0;max-height:0;overflow:hidden;
+  transition:opacity .5s,max-height .5s;
+}
+.results-strip.show{opacity:1;max-height:200px}
+.rs-block{
+  flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0;
+  position:relative;
+}
+.rs-block+.rs-block::before{
+  content:'';position:absolute;left:0;top:15%;height:70%;
+  width:1px;background:rgba(255,255,255,0.1);
+}
+.rs-arrow{font-size:12px;margin-bottom:2px}
+.rs-dl .rs-arrow{color:var(--teal)}
+.rs-ul .rs-arrow{color:#818cf8}
+.rs-num{font-size:44px;font-weight:700;line-height:1;letter-spacing:-2px;font-variant-numeric:tabular-nums}
+.rs-dl .rs-num{color:var(--teal)}
+.rs-ul .rs-num{color:#818cf8}
+.rs-label{font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.rs-unit{font-size:10px;color:var(--muted2);margin-top:1px}
+
+/* Ping strip */
+.ping-strip{
+  display:flex;gap:20px;padding:2px 0 14px;
+  opacity:0;max-height:0;overflow:hidden;transition:opacity .4s,max-height .4s;
+}
+.ping-strip.show{opacity:1;max-height:60px}
+.ps-item{display:flex;align-items:center;gap:4px;font-size:12px}
+.ps-label{font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+.ps-val{font-weight:700;font-variant-numeric:tabular-nums;color:var(--white)}
+.ps-unit{font-size:9.5px;color:var(--muted2)}
+
+/* Post actions */
+.post-actions{
+  display:flex;gap:8px;padding:2px 0 14px;
+  opacity:0;max-height:0;overflow:hidden;transition:opacity .4s,max-height .4s;
+}
+.post-actions.show{opacity:1;max-height:60px}
+.pa-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:7px 16px;border-radius:18px;
+  border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);
+  color:rgba(255,255,255,0.6);font-size:11.5px;font-weight:600;
+  cursor:pointer;transition:all .18s;font-family:inherit;
+}
+.pa-btn:hover{border-color:rgba(255,255,255,0.25);color:var(--white)}
+.pa-btn svg{width:12px;height:12px}
+
+/* CTA */
+.cta-row{display:flex;gap:10px;margin-bottom:32px;flex-wrap:wrap;justify-content:center}
+.cta-btn{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 24px;border-radius:24px;
+  border:1px solid rgba(255,255,255,0.14);background:transparent;
+  color:rgba(255,255,255,0.8);font-size:13px;font-weight:500;
+  cursor:pointer;transition:all .18s;font-family:inherit;white-space:nowrap;
+}
+.cta-btn:hover{border-color:rgba(255,255,255,0.3);color:var(--white)}
+.cta-btn svg{width:15px;height:15px;flex-shrink:0}
+
+/* TILES */
+.tiles-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:28px 40px;max-width:580px;width:100%;justify-items:center;
+}
+.tile{
+  display:flex;flex-direction:column;align-items:center;gap:12px;cursor:pointer;
+}
+.tile-icon{
+  width:72px;height:72px;border-radius:18px;
+  background:rgba(14,31,54,0.9);
+  border:1px solid rgba(56,189,248,0.12);
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s,border-color .2s;
+}
+.tile:hover .tile-icon{background:rgba(56,189,248,0.12);border-color:rgba(56,189,248,0.25)}
+.tile-icon svg{width:30px;height:30px;color:var(--teal)}
+.tile-lbl{font-size:13px;color:var(--teal);text-align:center;font-weight:500;line-height:1.3}
+
+/* ── RESULTS PANEL ── */
+#panel-results{
+  background:var(--bg);min-height:calc(100vh - 52px);
+  padding:32px 24px;
+}
+.rh{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.rh h2{font-size:20px;font-weight:700}
+.btn-clear{
+  padding:7px 18px;border-radius:8px;border:1px solid rgba(229,57,53,.38);
+  background:transparent;color:#ef5350;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;
+}
+.btn-clear:hover{background:rgba(229,57,53,.1);border-color:#ef5350}
+.rt{width:100%;border-collapse:collapse;font-size:13px}
+.rt th{
+  text-align:left;padding:9px 12px;font-size:10px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.rt td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.06);font-variant-numeric:tabular-nums}
+.rt tr:hover td{background:rgba(255,255,255,.025)}
+td.dl{color:var(--teal);font-weight:700}
+td.ul{color:#818cf8;font-weight:700}
+.empty{text-align:center;padding:60px 0;color:var(--muted);font-size:14px}
+
+/* ── SETTINGS DRAWER ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:199;opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.overlay.open{opacity:1;pointer-events:all}
+.drawer{
+  position:fixed;top:0;right:-440px;width:420px;height:100vh;
+  background:#0b1526;z-index:200;
+  transition:right .32s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto;border-left:1px solid var(--border);
+}
+.drawer.open{right:0}
+.d-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 22px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:#0b1526;z-index:1;
+}
+.d-hdr h3{font-size:15px;font-weight:700}
+.d-close{
+  width:30px;height:30px;border-radius:50%;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;font-size:17px;
+  display:flex;align-items:center;justify-content:center;transition:all .18s;font-family:inherit;
+}
+.d-close:hover{border-color:var(--white);color:var(--white)}
+.d-body{padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.d-sec{
+  font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--teal);padding-bottom:6px;
+  border-bottom:1px solid rgba(56,189,248,.15);margin-top:2px;
+}
+.d-group{display:flex;flex-direction:column;gap:5px}
+.d-group label{font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);text-transform:uppercase}
+.d-group input[type=text],.d-group select{
+  background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;
+  color:var(--white);padding:9px 12px;font-size:13.5px;font-family:inherit;
+  outline:none;transition:border-color .2s;width:100%;
+}
+.d-group input:focus,.d-group select:focus{border-color:var(--teal)}
+.d-group select option{background:#1a2a40}
+.slrow{display:flex;align-items:center;gap:10px}
+.slrow input[type=range]{
+  flex:1;-webkit-appearance:none;height:3px;border-radius:2px;
+  background:rgba(255,255,255,.12);border:none;padding:0;outline:none;cursor:pointer;
+}
+.slrow input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--teal);cursor:pointer;
+}
+.ni{
+  width:70px;padding:7px 8px;border-radius:7px;border:1px solid var(--border);
+  background:rgba(255,255,255,.06);color:var(--white);font-size:13px;font-family:inherit;
+  font-variant-numeric:tabular-nums;outline:none;text-align:right;transition:border-color .2s;
+}
+.ni:focus{border-color:var(--teal)}
+.row2{display:flex;gap:10px}
+.row2 .d-group{flex:1}
+.d-note{font-size:10.5px;color:var(--muted);font-style:italic}
+.d-apply{
+  width:100%;padding:13px;border-radius:9px;border:none;
+  background:linear-gradient(135deg,var(--teal),#818cf8);
+  color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+  transition:opacity .2s,transform .1s;margin-top:4px;
+}
+.d-apply:hover{opacity:.9}
+.d-apply:active{transform:scale(.98)}
+
+/* RECORD */
+#recBtn{
+  position:fixed;bottom:22px;right:22px;width:50px;height:50px;border-radius:50%;
+  background:#c62828;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 18px rgba(198,40,40,.45);z-index:300;transition:all .2s;
+}
+#recBtn:hover{transform:scale(1.1)}
+#recBtn svg{width:20px;height:20px;fill:white}
+#recBtn.active{background:#1a1f2e;border:2px solid #e53935}
+#recInd{
+  display:none;position:fixed;top:60px;right:18px;
+  align-items:center;gap:6px;
+  background:rgba(8,13,26,.94);border:1px solid rgba(229,57,53,.3);
+  border-radius:16px;padding:5px 12px;
+  font-size:11px;font-weight:700;color:#ef5350;z-index:299;
+}
+#recInd.show{display:flex}
+.rd{width:7px;height:7px;border-radius:50%;background:#e53935;animation:blink 1s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+#toast{
+  position:fixed;bottom:82px;right:20px;
+  background:rgba(8,13,26,.97);border:1px solid rgba(255,255,255,.12);
+  border-radius:9px;padding:11px 16px;font-size:12px;font-weight:600;
+  z-index:400;opacity:0;transform:translateY(8px);
+  transition:all .22s;pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateY(0)}
+
+/* MOBILE */
+@media(max-width:640px){
+  nav{padding:0 16px}
+  .nav-right .nav-link:not(.always){display:none}
+  .gauge-outer{width:250px;height:250px}
+  .gauge-ring{width:175px;height:175px}
+  .go-text{font-size:22px}
+  .si-num{font-size:38px}
+  .server-row{gap:32px}
+  .drawer{width:100%;right:-100%}
+  .tiles-grid{gap:20px 24px;max-width:380px}
+  .tile-icon{width:60px;height:60px;border-radius:15px}
+  .tile-icon svg{width:26px;height:26px}
+}
+</style>
+</head>
+<body>
+
+<!-- SETTINGS -->
+<div class="overlay" id="sOverlay" onclick="closeSettings()"></div>
+<div class="drawer" id="sDrawer">
+  <div class="d-hdr">
+    <h3>Speed Configurator</h3>
+    <button class="d-close" onclick="closeSettings()">✕</button>
+  </div>
+  <div class="d-body">
+    <div class="d-sec">Download / Upload</div>
+    <div class="d-group">
+      <label>Download (Mbps)</label>
+      <div class="slrow">
+        <input type="range" id="s_dl" min="0.1" max="1000" step="0.1" value="136.07" oninput="sn('s_dl','sn_dl')">
+        <input type="number" class="ni" id="sn_dl" min="0.1" max="1000" step="0.1" value="136.07" oninput="ss('sn_dl','s_dl')">
+      </div>
+    </div>
+    <div class="d-group">
+      <label>Upload (Mbps)</label>
+      <div class="slrow">
+        <input type="range" id="s_ul" min="0.1" max="1000" step="0.1" value="6.96" oninput="sn('s_ul','sn_ul')">
+        <input type="number" class="ni" id="sn_ul" min="0.1" max="1000" step="0.1" value="6.96" oninput="ss('sn_ul','s_ul')">
+      </div>
+    </div>
+    <div class="d-sec">Ping / Jitter</div>
+    <div class="row2">
+      <div class="d-group"><label>Ping (ms)</label><input type="number" class="ni" id="s_ping" value="36" style="width:100%"></div>
+      <div class="d-group"><label>Jitter (ms)</label><input type="number" class="ni" id="s_jitter" value="3" style="width:100%"></div>
+    </div>
+    <div class="row2">
+      <div class="d-group"><label>DL Ping (ms)</label><input type="number" class="ni" id="s_dlping" value="97" style="width:100%"></div>
+      <div class="d-group"><label>UL Ping (ms)</label><input type="number" class="ni" id="s_ulping" value="39" style="width:100%"></div>
+    </div>
+    <div class="d-sec">Identity</div>
+    <div class="d-group"><label>ISP Name</label><input type="text" id="s_isp" value="Public Wi-Fi"></div>
+    <div class="d-group"><label>IP Address</label><input type="text" id="s_ip" value="203.0.113.18"></div>
+    <div class="d-sec">Server</div>
+    <div class="d-group">
+      <label>Quick Preset</label>
+      <select id="s_preset" onchange="applyPreset(this.value)">
+        <option value="">— Custom —</option>
+        <option value="Aurora - Frankfurt|Frankfurt, DE">Frankfurt, Germany</option>
+        <option value="Skymax Broadband|Delhi, IN">Delhi, India</option>
+        <option value="Hathway Cable|Mumbai, IN">Mumbai, India</option>
+        <option value="StarHub Ltd|Singapore, SG">Singapore</option>
+        <option value="BT Broadband|London, GB">London, UK</option>
+        <option value="Verizon FiOS|New York, US">New York, USA</option>
+        <option value="Comcast|Los Angeles, US">Los Angeles, USA</option>
+        <option value="SoftBank|Tokyo, JP">Tokyo, Japan</option>
+        <option value="OVHcloud|Paris, FR">Paris, France</option>
+        <option value="Telstra|Sydney, AU">Sydney, Australia</option>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="d-group"><label>Server Name</label><input type="text" id="s_server" value="Aurora - Frankfurt"></div>
+      <div class="d-group"><label>Location</label><input type="text" id="s_city" value="Frankfurt, DE"></div>
+    </div>
+    <div class="d-note">All values are spoofed locally. No real network traffic runs.</div>
+    <button class="d-apply" onclick="applySettings()">Apply & Close</button>
+  </div>
+</div>
+
+<!-- RECORD -->
+<div id="recInd"><div class="rd"></div> REC <span id="recTimer">0:00</span></div>
+<button id="recBtn" title="Record Screen" onclick="toggleRecord()">
+  <svg id="ri1" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="9.5" fill="none" stroke="white" stroke-width="1.5"/></svg>
+  <svg id="ri2" viewBox="0 0 24 24" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+</button>
+<div id="toast"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <svg class="nav-logo-icon" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2 A10 10 0 0 1 22 12" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+      <path d="M12 2 A10 10 0 0 0 2 12" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="2.5" fill="#38bdf8"/>
+      <line x1="12" y1="12" x2="18" y2="6" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <span class="nav-logo-text"><b>Speed</b>test</span>
+  </a>
+  <div class="nav-right">
+    <a href="#" class="nav-link always">
+      English
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+    </a>
+    <a href="#" class="nav-link">Apps</a>
+    <a href="#" class="nav-link">Learn</a>
+    <a href="#" class="nav-link">Data</a>
+    <a href="#" class="nav-link">About</a>
+    <button class="nav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16v.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <button class="nav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.582-7 8-7s8 3 8 7" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <button class="nav-icon" onclick="openSettings()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M17.66 6.34l-1.41 1.41M6.34 17.66l-1.41 1.41"/>
+      </svg>
+    </button>
+  </div>
+</nav>
+
+<!-- SUB NAV -->
+<div class="sub-nav">
+  <button class="sub-link active" onclick="showPanel('results',this)">
+    <span class="sub-dot"></span>
+    RESULTS
+  </button>
+  <button class="sub-link" onclick="openSettings()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M17.66 6.34l-1.41 1.41M6.34 17.66l-1.41 1.41"/>
+    </svg>
+    Settings
+  </button>
+</div>
+
+<!-- MAIN PANEL -->
+<div id="panel-main">
+
+  <!-- Gauge Section -->
+  <div class="gauge-section">
+
+    <!-- Results strip (post test) -->
+    <div class="results-strip" id="resultsStrip">
+      <div class="rs-block rs-dl">
+        <span class="rs-arrow">↓</span>
+        <div class="rs-num" id="dlNum">136.07</div>
+        <div class="rs-label">Download</div>
+        <div class="rs-unit">Mbps</div>
+      </div>
+      <div class="rs-block rs-ul">
+        <span class="rs-arrow">↑</span>
+        <div class="rs-num" id="ulNum">6.96</div>
+        <div class="rs-label">Upload</div>
+        <div class="rs-unit">Mbps</div>
+      </div>
+    </div>
+
+    <!-- Ping strip -->
+    <div class="ping-strip" id="pingStrip">
+      <div class="ps-item"><span class="ps-label">Ping</span><span class="ps-val" id="pingV">36</span><span class="ps-unit">ms</span></div>
+      <div class="ps-item"><span class="ps-label">Jitter</span><span class="ps-val" id="jitterV">3</span><span class="ps-unit">ms</span></div>
+      <div class="ps-item"><span class="ps-label">DL</span><span class="ps-val" id="dlPingV">97</span><span class="ps-unit">ms</span></div>
+      <div class="ps-item"><span class="ps-label">UL</span><span class="ps-val" id="ulPingV">39</span><span class="ps-unit">ms</span></div>
+    </div>
+
+    <!-- Post actions -->
+    <div class="post-actions" id="postActions">
+      <button class="pa-btn" onclick="copyResult()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3a1.5 1.5 0 00-1.5-1.5H3A1.5 1.5 0 001.5 3v6.5A1.5 1.5 0 003 11h2"/></svg>
+        Copy
+      </button>
+      <button class="pa-btn" onclick="shareResult()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="3" r="1.5"/><circle cx="4" cy="8" r="1.5"/><circle cx="12" cy="13" r="1.5"/><line x1="5.5" y1="9" x2="10.5" y2="12"/><line x1="10.5" y1="4" x2="5.5" y2="7"/></svg>
+        Share
+      </button>
+    </div>
+
+    <!-- Phase label -->
+    <div class="phase-lbl" id="phaseLabel" style="position:relative;top:auto;left:auto;transform:none;text-align:center;margin-bottom:8px;height:14px"></div>
+
+    <!-- Gauge -->
+    <div class="gauge-outer" id="gaugeOuter">
+      <div class="gauge-ring" id="gaugeRing">
+        <!-- Speed inside (during test) -->
+        <div class="speed-inside" id="speedInside">
+          <span class="si-num" id="liveNum">0</span>
+          <div class="si-unit" id="liveUnit">ms PING</div>
+        </div>
+        <!-- GO text (idle) -->
+        <span class="go-text" id="goText" onclick="startTest()">GO</span>
+      </div>
+    </div>
+
+    <div class="go-sub" id="goSub">Tap to begin speed test</div>
+
+    <!-- Server row -->
+    <div class="server-row">
+      <div class="srv-col">
+        <div class="srv-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.582-7 8-7s8 3 8 7" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="srv-info">
+          <div class="srv-name" id="ispName">Public Wi-Fi</div>
+          <div class="srv-sub" id="ipName">203.0.113.18</div>
+        </div>
+      </div>
+      <div class="srv-col">
+        <div class="srv-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><line x1="3" y1="12" x2="21" y2="12"/>
+          </svg>
+        </div>
+        <div class="srv-info">
+          <div class="srv-name" id="srvName">Aurora - Frankfurt</div>
+          <div class="srv-sub" id="cityName">Frankfurt, DE</div>
+          <button class="srv-change" onclick="openSettings()">Change Server</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connections -->
+    <div class="conn-section">
+      <span class="conn-label">Connections</span>
+      <div class="conn-toggle-row">
+        <span class="conn-side-label">Multi</span>
+        <div class="tgl on" id="connTgl" onclick="this.classList.toggle('on')">
+          <div class="tgl-thumb"></div>
+        </div>
+        <span class="conn-side-label">Single</span>
+      </div>
+    </div>
+
+  </div><!-- /gauge-section -->
+
+  <div class="sect-divider"></div>
+
+  <!-- Footer -->
+  <div class="footer-section">
+
+    <!-- CTA buttons -->
+    <div class="cta-row">
+      <button class="cta-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <circle cx="10" cy="8" r="4"/><path d="M2 20c0-4 3.582-7 8-7"/><line x1="19" y1="8" x2="19" y2="14" stroke-linecap="round"/><line x1="16" y1="11" x2="22" y2="11" stroke-linecap="round"/>
+        </svg>
+        Create an Account
+      </button>
+      <button class="cta-btn" onclick="showPanel('results',null)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>
+        </svg>
+        Results History
+      </button>
+    </div>
+
+    <!-- Tiles -->
+    <div class="tiles-grid">
+      <div class="tile">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="7" y="2" width="10" height="18" rx="2"/><line x1="12" y1="17" x2="12" y2="17.5" stroke-linecap="round" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="tile-lbl">Desktop Apps</div>
+      </div>
+      <div class="tile">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M5 12.55a11 11 0 0114.08 0" stroke-linecap="round"/>
+            <path d="M1.42 9a16 16 0 0121.16 0" stroke-linecap="round"/>
+            <path d="M8.53 16.11a6 6 0 016.95 0" stroke-linecap="round"/>
+            <circle cx="12" cy="20" r="1" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="tile-lbl">Troubleshoot Your Wifi</div>
+      </div>
+      <div class="tile">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><line x1="3" y1="12" x2="21" y2="12"/>
+          </svg>
+        </div>
+        <div class="tile-lbl">Check for Outages</div>
+      </div>
+      <div class="tile">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="tile-lbl">Test My Network</div>
+      </div>
+      <div class="tile">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div class="tile-lbl">Speed Statistics</div>
+      </div>
+      <div class="tile">
+        <div class="tile-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 8v4l3 3"/>
+          </svg>
+        </div>
+        <div class="tile-lbl">History & Reports</div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /panel-main -->
+
+<!-- RESULTS PANEL -->
+<div id="panel-results">
+  <div class="rh">
+    <h2>Test History</h2>
+    <button class="btn-clear" onclick="clearHistory()">Clear All</button>
+  </div>
+  <div id="resultsBody"></div>
+</div>
+
+<script>
+// ─── Config ─────────────────────────────────────────────────────────────
+const D={dl:136.07,ul:6.96,ping:36,jitter:3,dlPing:97,ulPing:39,
+  isp:'Public Wi-Fi',ip:'203.0.113.18',
+  server:'Aurora - Frankfurt',city:'Frankfurt, DE'};
+let cfg={...D};
+
+function $(id){return document.getElementById(id)}
+function sv(id,v){const e=$(id);if(e)e.value=v}
+function gv(id){return $(id)?$(id).value:''}
+function gn(id){return parseFloat(gv(id))||0}
+function gi(id){return parseInt(gv(id))||0}
+
+function loadCfg(){
+  try{const s=JSON.parse(localStorage.getItem('st_cfg'));if(s)cfg={...D,...s}}catch(e){}
+  applyUI();
+}
+function applyUI(){
+  $('ispName').textContent=cfg.isp;
+  $('ipName').textContent=cfg.ip;
+  $('srvName').textContent=cfg.server;
+  $('cityName').textContent=cfg.city;
+  $('dlNum').textContent=cfg.dl.toFixed(2);
+  $('ulNum').textContent=cfg.ul.toFixed(2);
+  $('pingV').textContent=cfg.ping;
+  $('jitterV').textContent=cfg.jitter;
+  $('dlPingV').textContent=cfg.dlPing;
+  $('ulPingV').textContent=cfg.ulPing;
+  syncForm();
+}
+function syncForm(){
+  sv('s_dl',cfg.dl);sv('sn_dl',cfg.dl);
+  sv('s_ul',cfg.ul);sv('sn_ul',cfg.ul);
+  sv('s_ping',cfg.ping);sv('s_jitter',cfg.jitter);
+  sv('s_dlping',cfg.dlPing);sv('s_ulping',cfg.ulPing);
+  sv('s_isp',cfg.isp);sv('s_ip',cfg.ip);
+  sv('s_server',cfg.server);sv('s_city',cfg.city);
+}
+function sn(rid,nid){$(nid).value=$(rid).value}
+function ss(nid,rid){$(rid).value=$(nid).value}
+function applyPreset(v){
+  if(!v)return;
+  const[srv,city]=v.split('|');
+  sv('s_server',srv);sv('s_city',city);
+}
+function applySettings(){
+  cfg={
+    dl:Math.max(.1,gn('sn_dl')||gn('s_dl')),
+    ul:Math.max(.1,gn('sn_ul')||gn('s_ul')),
+    ping:Math.max(1,gi('s_ping')),jitter:Math.max(0,gi('s_jitter')),
+    dlPing:Math.max(1,gi('s_dlping')),ulPing:Math.max(1,gi('s_ulping')),
+    isp:gv('s_isp')||cfg.isp,ip:gv('s_ip')||cfg.ip,
+    server:gv('s_server')||cfg.server,city:gv('s_city')||cfg.city,
+  };
+  localStorage.setItem('st_cfg',JSON.stringify(cfg));
+  applyUI();closeSettings();
+}
+function openSettings(){$('sDrawer').classList.add('open');$('sOverlay').classList.add('open')}
+function closeSettings(){$('sDrawer').classList.remove('open');$('sOverlay').classList.remove('open')}
+
+// ─── Panels ──────────────────────────────────────────────────────────────
+function showPanel(name){
+  $('panel-main').style.display='none';
+  $('panel-results').style.display='none';
+  document.querySelectorAll('.sub-link').forEach(b=>b.classList.remove('active'));
+  if(name==='results'){
+    $('panel-results').style.display='block';
+    renderHistory();
+    document.querySelectorAll('.sub-link')[0].classList.add('active');
+  }else{
+    $('panel-main').style.display='flex';
+  }
+}
+
+// ─── Test ────────────────────────────────────────────────────────────────
+let busy=false;
+
+function startTest(){
+  if(busy)return;busy=true;
+
+  const ring=$('gaugeRing'),goTxt=$('goText'),si=$('speedInside'),sub=$('goSub'),ph=$('phaseLabel');
+
+  // Reset
+  $('resultsStrip').classList.remove('show');
+  $('pingStrip').classList.remove('show');
+  $('postActions').classList.remove('show');
+  goTxt.style.opacity='0';
+  si.classList.add('show');
+  ring.classList.add('running');
+  sub.textContent='Testing…';
+
+  ph.textContent='PING';ph.classList.add('show');
+  $('liveUnit').textContent='ms PING';
+
+  // Phase 1: Ping
+  anim(0,cfg.ping,1200,easeOut4,v=>{
+    $('liveNum').textContent=Math.round(v);
+    $('liveUnit').textContent='ms PING';
+  },()=>{
+    $('pingV').textContent=cfg.ping;
+    setTimeout(()=>{
+      // Phase 2: Download
+      ph.textContent='DOWNLOAD';$('liveUnit').textContent='↓ Mbps';
+      const t0=performance.now(),dur=4000;
+      function dlF(now){
+        const t=Math.min((now-t0)/dur,1);
+        const v=Math.max(0,cfg.dl*eio3(t)+(t<.95?(Math.random()-.5)*.08*cfg.dl:0));
+        $('liveNum').textContent=v.toFixed(2);$('liveUnit').textContent='↓ Mbps';
+        if(t<1)requestAnimationFrame(dlF);
+        else{
+          $('liveNum').textContent=cfg.dl.toFixed(2);
+          $('dlNum').textContent=cfg.dl.toFixed(2);$('dlPingV').textContent=cfg.dlPing;
+          setTimeout(()=>{
+            // Phase 3: Upload
+            ph.textContent='UPLOAD';$('liveUnit').textContent='↑ Mbps';
+            const u0=performance.now(),ud=3000;
+            function ulF(now){
+              const t=Math.min((now-u0)/ud,1);
+              const v=Math.max(0,cfg.ul*eio3(t)+(t<.95?(Math.random()-.5)*.08*cfg.ul:0));
+              $('liveNum').textContent=v.toFixed(2);$('liveUnit').textContent='↑ Mbps';
+              if(t<1)requestAnimationFrame(ulF);
+              else{
+                $('liveNum').textContent=cfg.ul.toFixed(2);
+                $('ulNum').textContent=cfg.ul.toFixed(2);
+                $('ulPingV').textContent=cfg.ulPing;$('jitterV').textContent=cfg.jitter;
+                setTimeout(()=>{
+                  ring.classList.remove('running');
+                  si.classList.remove('show');
+                  ph.classList.remove('show');ph.textContent='';
+                  setTimeout(()=>{ goTxt.style.opacity='1'; },320);
+                  sub.textContent='Tap to run again';
+                  busy=false;
+                  $('resultsStrip').classList.add('show');
+                  $('pingStrip').classList.add('show');
+                  $('postActions').classList.add('show');
+                  saveHistory();
+                },350);
+              }
+            }
+            requestAnimationFrame(ulF);
+          },200);
+        }
+      }
+      requestAnimationFrame(dlF);
+    },200);
+  });
+}
+
+function easeOut4(t){return 1-Math.pow(1-t,4)}
+function eio3(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+function anim(from,to,dur,ease,tick,done){
+  const t0=performance.now();
+  function f(now){
+    const t=Math.min((now-t0)/dur,1);
+    tick(from+(to-from)*ease(t));
+    if(t<1)requestAnimationFrame(f);else{tick(to);done&&done();}
+  }
+  requestAnimationFrame(f);
+}
+
+// ─── History ─────────────────────────────────────────────────────────────
+function saveHistory(){
+  let h=[];try{h=JSON.parse(localStorage.getItem('st_h'))||[]}catch(e){}
+  h.unshift({ts:new Date().toLocaleString(),dl:cfg.dl.toFixed(2),ul:cfg.ul.toFixed(2),
+    ping:cfg.ping,jitter:cfg.jitter,isp:cfg.isp,server:cfg.server+' — '+cfg.city});
+  if(h.length>10)h=h.slice(0,10);
+  localStorage.setItem('st_h',JSON.stringify(h));
+}
+function renderHistory(){
+  let h=[];try{h=JSON.parse(localStorage.getItem('st_h'))||[]}catch(e){}
+  const el=$('resultsBody');
+  if(!h.length){el.innerHTML='<div class="empty">No tests yet. Run a speed test first.</div>';return;}
+  el.innerHTML=`<table class="rt"><thead><tr>
+    <th>Date</th><th>Download</th><th>Upload</th><th>Ping</th><th>Jitter</th><th>ISP</th><th>Server</th>
+  </tr></thead><tbody>${h.map(r=>`<tr>
+    <td>${r.ts}</td><td class="dl">${r.dl} Mbps</td><td class="ul">${r.ul} Mbps</td>
+    <td>${r.ping} ms</td><td>${r.jitter} ms</td><td>${r.isp}</td><td>${r.server}</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+function clearHistory(){localStorage.removeItem('st_h');renderHistory()}
+
+// ─── Copy/Share ───────────────────────────────────────────────────────────
+function copyResult(){
+  navigator.clipboard.writeText(`Download: ${cfg.dl.toFixed(2)} Mbps | Upload: ${cfg.ul.toFixed(2)} Mbps | Ping: ${cfg.ping}ms | Jitter: ${cfg.jitter}ms\nISP: ${cfg.isp} | Server: ${cfg.server}, ${cfg.city}`)
+  .then(()=>toast('✓ Result copied'));
+}
+function shareResult(){
+  navigator.clipboard.writeText(`My speed: ↓ ${cfg.dl.toFixed(2)} Mbps | ↑ ${cfg.ul.toFixed(2)} Mbps | ${cfg.ping}ms ping`)
+  .then(()=>toast('✓ Share text copied'));
+}
+function toast(msg,ms=2200){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+// ─── Screen Record ────────────────────────────────────────────────────────
+let rec=null,chunks=[],t0=null,tInt=null,rafId=null;
+const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+function startRecording(stream,mime){
+  chunks=[];
+  rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:4000000});
+  rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data)};
+  rec.onstop=()=>{
+    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+    const ext=mime.includes('mp4')?'mp4':'webm';
+    const blob=new Blob(chunks,{type:mime});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=`speedtest-${Date.now()}.${ext}`;document.body.appendChild(a);a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);document.body.removeChild(a);
+    $('recBtn').classList.remove('active');$('ri1').style.display='block';$('ri2').style.display='none';
+    $('recInd').classList.remove('show');chunks=[];rec=null;t0=null;
+    toast('✓ Recording saved',3000);
+  };
+  rec.start(100);
+  $('recBtn').classList.add('active');$('ri1').style.display='none';$('ri2').style.display='block';
+  $('recInd').classList.add('show');t0=Date.now();
+  tInt=setInterval(()=>{
+    const s=Math.floor((Date.now()-t0)/1000);
+    $('recTimer').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  },1000);
+  toast('● Recording started');
+}
+
+function drawCanvasFrame(ctx,canvas){
+  const W=canvas.width,H=canvas.height;
+  const teal='#38bdf8';
+  // Background
+  ctx.fillStyle='#080d1a';ctx.fillRect(0,0,W,H);
+  // Phase label
+  const ph=$('phaseLabel').textContent;
+  if(ph){ctx.fillStyle='rgba(255,255,255,0.45)';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.letterSpacing='3px';ctx.fillText(ph,W/2,H*0.18);}
+  // Outer ring
+  ctx.beginPath();ctx.arc(W/2,H*0.45,130,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,0.09)';ctx.lineWidth=1;ctx.stroke();
+  // Glow ring
+  const grd=ctx.createRadialGradient(W/2,H*0.45,75,W/2,H*0.45,95);
+  grd.addColorStop(0,'rgba(56,189,248,0.06)');grd.addColorStop(1,'rgba(8,13,26,0)');
+  ctx.beginPath();ctx.arc(W/2,H*0.45,90,0,Math.PI*2);
+  ctx.fillStyle=grd;ctx.fill();
+  ctx.shadowColor=teal;ctx.shadowBlur=28;
+  ctx.beginPath();ctx.arc(W/2,H*0.45,90,0,Math.PI*2);
+  ctx.strokeStyle=teal;ctx.lineWidth=2.5;ctx.stroke();
+  ctx.shadowBlur=0;
+  // Speed or GO
+  const si=$('speedInside');
+  const showing=si.classList.contains('show');
+  ctx.textAlign='center';
+  if(showing){
+    const num=$('liveNum').textContent;
+    const unit=$('liveUnit').textContent;
+    ctx.fillStyle='#ffffff';ctx.font='bold 58px system-ui';ctx.letterSpacing='-1px';
+    ctx.fillText(num,W/2,H*0.45+18);
+    ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='12px system-ui';ctx.letterSpacing='1px';
+    ctx.fillText(unit,W/2,H*0.45+40);
+  }else{
+    ctx.fillStyle=teal;ctx.font='300 28px system-ui';ctx.letterSpacing='8px';
+    ctx.fillText('GO',W/2+4,H*0.45+10);
+  }
+  // ISP label
+  ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='13px system-ui';ctx.letterSpacing='0px';
+  ctx.fillText($('ispName').textContent,W/2,H*0.72);
+  // Status text
+  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='12px system-ui';
+  ctx.fillText($('goSub').textContent,W/2,H*0.84);
+}
+
+async function toggleRecord(){
+  if(rec&&rec.state!=='inactive'){rec.stop();clearInterval(tInt);return}
+  try{
+    const mime=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm'].find(m=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m))||'video/webm';
+    if(isMobile){
+      // Canvas-based recording for mobile
+      const canvas=document.createElement('canvas');
+      canvas.width=390;canvas.height=720;
+      const ctx=canvas.getContext('2d');
+      const stream=canvas.captureStream(30);
+      startRecording(stream,mime);
+      function frame(){drawCanvasFrame(ctx,canvas);rafId=requestAnimationFrame(frame);}
+      rafId=requestAnimationFrame(frame);
+    }else{
+      // Desktop: full screen capture
+      const stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:60},audio:false});
+      startRecording(stream,mime);
+      stream.getVideoTracks()[0].onended=()=>{if(rec&&rec.state!=='inactive'){rec.stop();clearInterval(tInt);}};
+    }
+  }catch(e){if(e.name!=='AbortError')toast('⚠ Recording unavailable')}
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────
+loadCfg();
+</script>
+</body>
+</html>

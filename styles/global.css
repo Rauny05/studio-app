@@ -2863,24 +2863,18 @@ html[data-theme="light"] {
    RESPONSIVE — MOBILE FIRST
    ═══════════════════════════════════════════════ */
 
-/* ── Mobile Nav Backdrop ─────────────────────── */
+/* ── Mobile Nav Backdrop — rendered conditionally by Sidebar.tsx ── */
 .mobile-nav-backdrop {
-  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 199;
+  animation: fade-in 180ms ease;
 }
 
 @media (max-width: 768px) {
-  /* Show backdrop only on mobile */
-  .mobile-nav-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    z-index: 199;
-    animation: fade-in 180ms ease;
-  }
-
   /* ── Sidebar: fixed drawer on mobile ───── */
   .sidebar {
     position: fixed;
@@ -8768,3 +8762,113 @@ details[open] .pv-done-summary svg { transform: rotate(90deg); }
 .golive-past-summary:hover { opacity: 1; }
 
 .golive-scroll-past { margin-top: 8px; }
+
+/* ═══════════════════════════════════════════════
+   MOBILE SIDEBAR IMPROVEMENTS
+   ═══════════════════════════════════════════════ */
+
+/* Close button — only visible on mobile drawer */
+.sidebar-mobile-close {
+  display: none;
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--app-text-muted);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .sidebar-mobile-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Larger, finger-friendly nav items */
+  .sidebar-nav-item {
+    padding: 13px 14px;
+    font-size: 15px;
+    border-radius: 10px;
+    gap: 13px;
+    min-height: 52px;
+  }
+
+  .sidebar-nav-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .sidebar-nav-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* More breathing room between items */
+  .sidebar-nav {
+    gap: 2px;
+    padding: 8px 10px;
+  }
+
+  /* Taller logo bar */
+  .sidebar-logo {
+    padding: 18px 14px 14px;
+    min-height: 64px;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   SETTINGS — REMINDERS
+   ═══════════════════════════════════════════════ */
+
+.settings-reminder-select,
+.settings-reminder-input {
+  width: 100%;
+  background: var(--app-bg);
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  color: var(--app-text);
+  font-size: 13px;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 150ms;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.settings-reminder-select:focus,
+.settings-reminder-input:focus {
+  border-color: var(--app-purple);
+}
+
+.settings-reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.settings-reminder-del {
+  background: none;
+  border: none;
+  color: var(--app-text-muted);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 120ms, background 120ms;
+}
+
+.settings-reminder-del:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
