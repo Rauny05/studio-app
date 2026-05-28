@@ -79,6 +79,18 @@ export const authOptions: NextAuthOptions = {
     error: "/auth/error",
   },
   session: { strategy: "jwt" },
+  // iOS Safari ITP blocks the state cookie on the Google→app redirect.
+  // sameSite:"none" on state + pkce lets the callback verify correctly.
+  cookies: {
+    state: {
+      name: "__Secure-next-auth.state",
+      options: { httpOnly: true, sameSite: "none" as const, path: "/", secure: true },
+    },
+    pkceCodeVerifier: {
+      name: "__Secure-next-auth.pkce.code_verifier",
+      options: { httpOnly: true, sameSite: "none" as const, path: "/", secure: true },
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);
