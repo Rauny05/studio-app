@@ -316,8 +316,8 @@ function RemindersSection() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "admin";
+  const { data: session, status } = useSession();
+  const isAdmin = status === "authenticated" && session?.user?.role === "admin";
 
   return (
     <div style={{ maxWidth: 640, padding: "0 0 40px" }}>

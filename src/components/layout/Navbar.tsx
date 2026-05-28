@@ -101,10 +101,18 @@ export function Navbar() {
   const { toggleSidebar, sidebarCollapsed, darkMode, toggleDarkMode, searchOpen, setSearchOpen } = useUIStore();
   const { state: pushState, subscribe, unsubscribe } = usePush();
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+
+  function handleRefresh() {
+    setRefreshing(true);
+    router.refresh();
+    setTimeout(() => setRefreshing(false), 800);
+  }
 
   // Resolve dynamic board names
   const { boards } = useKanbanStore();
@@ -137,6 +145,30 @@ export function Navbar() {
             </svg>
           </button>
           <h1 className="navbar-title">{title}</h1>
+        </div>
+
+        {/* Mobile-only: back + refresh */}
+        <div className="navbar-mobile-actions">
+          <button
+            className="navbar-icon-btn"
+            onClick={() => router.back()}
+            aria-label="Go back"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <button
+            className={`navbar-icon-btn ${refreshing ? "navbar-refreshing" : ""}`}
+            onClick={handleRefresh}
+            aria-label="Refresh"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </button>
         </div>
 
         <div className="navbar-right">

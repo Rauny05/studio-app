@@ -8872,3 +8872,31 @@ details[open] .pv-done-summary svg { transform: rotate(90deg); }
   color: #ef4444;
   background: rgba(239, 68, 68, 0.08);
 }
+
+/* ═══════════════════════════════════════════════
+   NAVBAR — MOBILE BACK + REFRESH
+   ═══════════════════════════════════════════════ */
+
+/* Hidden on desktop */
+.navbar-mobile-actions {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .navbar-mobile-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    margin-right: 6px;
+  }
+
+  .navbar-refreshing svg {
+    animation: spin 0.7s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
