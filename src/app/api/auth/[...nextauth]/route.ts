@@ -28,15 +28,19 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.passcode) return null;
 
         const email = credentials.email.toLowerCase().trim();
+        const passcode = credentials.passcode.trim();
+
+        // Admin can sign in with their own dedicated code
+        if (email === ADMIN_EMAIL) {
+          const adminCode = process.env.ADMIN_ACCESS_CODE;
+          if (!adminCode || passcode !== adminCode) return null;
+          return { id: email, email, name: "Raunaq", image: null };
+        }
+
+        // Team members use the shared access code
         const expectedCode = process.env.APP_ACCESS_CODE;
+        if (!expectedCode || passcode !== expectedCode) return null;
 
-        // Admin must use Google OAuth — never the shared passcode
-        if (email === ADMIN_EMAIL) return null;
-
-        if (!expectedCode) return null;
-        if (credentials.passcode.trim() !== expectedCode.trim()) return null;
-
-        // Email must be in the allowed users list
         const users = await loadUsers();
         const found = users.find((u) => u.email === email);
         if (!found) return null;
