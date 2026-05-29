@@ -1337,8 +1337,9 @@ export function DeliverablesView() {
       if (!ov) return row;
       return {
         ...ov,
-        // If override has no goLiveDate but the sheet does, keep sheet's value
-        goLiveDate: ov.goLiveDate ?? row.goLiveDate,
+        // Sheet's goLiveDate is the source of truth — always wins over override.
+        // Only fall back to override's date if the sheet has no date.
+        goLiveDate: row.goLiveDate ?? ov.goLiveDate,
       };
     };
     const sheetRows = data.map(mergeRow);
