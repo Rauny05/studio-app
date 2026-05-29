@@ -1376,9 +1376,24 @@ export function DeliverablesView() {
       prevDataRef.current = nextStr;
       setData(next);
 
-      // Overlay server-side overrides so all users see the same saved state
+      // Overlay server-side overrides so all users see the same saved state.
+      // Self-heal: if the sheet now provides a goLiveDate, remove any stale
+      // goLiveDate from the override so the sheet value always wins.
       if (overridesEnv?.data && typeof overridesEnv.data === "object") {
-        setOverrides(overridesEnv.data as Record<string, DeliverableRow>);
+        const rawOverrides = overridesEnv.data as Record<string, DeliverableRow>;
+        const sheetById = Object.fromEntries(next.map((r) => [r.id, r]));
+        const healedOverrides = Object.fromEntries(
+          Object.entries(rawOverrides).map(([id, ov]) => {
+            const sheetRow = sheetById[id];
+            if (sheetRow?.goLiveDate && ov.goLiveDate && ov.goLiveDate !== sheetRow.goLiveDate) {
+              // Sheet has a date — drop the stale override date
+              const { goLiveDate: _dropped, ...rest } = ov;
+              return [id, rest as DeliverableRow];
+            }
+            return [id, ov];
+          })
+        );
+        setOverrides(healedOverrides);
       }
 
       // Load locally-created rows
