@@ -17,12 +17,12 @@ const nav = [
     ),
   },
   {
-    label: "Projects",
-    href: "/projects",
+    label: "Scripts",
+    href: "/scripts",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" />
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
       </svg>
     ),
   },
@@ -138,7 +138,7 @@ export function Sidebar() {
             const key = item.href.replace("/", "");
             return permissions.includes(key) || permissions.includes(`${key}:view`);
           }).map((item) => {
-            const active = pathname === item.href || (item.href === "/projects" && pathname.startsWith("/projects/")) || (item.href === "/calendar" && pathname.startsWith("/calendar")) || (item.href === "/deliverables" && pathname.startsWith("/deliverables")) || (item.href === "/todos" && pathname.startsWith("/todos"));
+            const active = pathname === item.href || (item.href === "/scripts" && pathname.startsWith("/scripts")) || (item.href === "/calendar" && pathname.startsWith("/calendar")) || (item.href === "/deliverables" && pathname.startsWith("/deliverables")) || (item.href === "/todos" && pathname.startsWith("/todos"));
             return (
               <Link
                 key={item.href}

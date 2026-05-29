@@ -9,6 +9,10 @@
     {
       "path": "/api/push/reminder-check",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/gmail/poll",
+      "schedule": "* * * * *"
     }
   ]
 }

@@ -135,6 +135,49 @@ function computeOverallStatus(
   return "pending";
 }
 
+/**
+ * Parse a go-live date string into YYYY-MM-DD.
+ * Handles: DD/MM/YYYY, MM/DD/YYYY (detected by day > 12), YYYY-MM-DD,
+ * and natural formats like "12 Jun 2025" or "Jun 12, 2025".
+ * Returns null if unparseable or empty.
+ */
+function parseGoLiveDate(raw: string): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  // Already ISO: YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const d = new Date(trimmed + "T00:00:00");
+    return isNaN(d.getTime()) ? null : trimmed;
+  }
+
+  // DD/MM/YYYY or MM/DD/YYYY
+  const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (slashMatch) {
+    let [, a, b, y] = slashMatch;
+    if (y.length === 2) y = `20${y}`;
+    // If first number > 12 it must be day
+    const aNum = parseInt(a, 10);
+    const bNum = parseInt(b, 10);
+    const [day, month] = aNum > 12 ? [aNum, bNum] : [bNum, aNum]; // assume DD/MM for ambiguous
+    const iso = `${y}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const d = new Date(iso + "T00:00:00");
+    return isNaN(d.getTime()) ? null : iso;
+  }
+
+  // Natural: "12 Jun 2025", "Jun 12, 2025", "12-Jun-2025"
+  const d = new Date(trimmed);
+  if (!isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  return null;
+}
+
 export async function GET(req: import("next/server").NextRequest) {
   // Accept both NextAuth session and mobile JWT
   const { getServerSession } = await import("next-auth");
@@ -183,15 +226,19 @@ export async function GET(req: import("next/server").NextRequest) {
 
       const delRaw = (row[2] ?? "").trim();
       const pocRaw = (row[3] ?? "").trim();
-      const emailSent = (row[4] ?? "").trim().toLowerCase() === "yes";
-      const advance50 = (row[5] ?? "").trim().toLowerCase() === "yes";
-      const payment100 = (row[6] ?? "").trim().toLowerCase() === "yes";
-      const invoiceNumber = (row[7] ?? "").trim();
-      const note = (row[8] ?? "").trim();
+      const goLiveDateRaw = (row[4] ?? "").trim();
+      const emailSent = (row[5] ?? "").trim().toLowerCase() === "yes";
+      const advance50 = (row[6] ?? "").trim().toLowerCase() === "yes";
+      const payment100 = (row[7] ?? "").trim().toLowerCase() === "yes";
+      const invoiceNumber = (row[8] ?? "").trim();
+      const note = (row[9] ?? "").trim();
 
       const { name: pocName, company: pocCompany } = parsePOC(pocRaw);
       const deliverables = parseDeliverables(delRaw);
       const paymentStep = (payment100 ? 3 : advance50 ? 2 : emailSent ? 1 : 0) as 0 | 1 | 2 | 3;
+
+      // Parse go live date — accepts DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, or "12 Jun 2025"
+      const goLiveDate = parseGoLiveDate(goLiveDateRaw);
 
       dataRows.push({
         id: pnNo || `row-${i}`,
@@ -209,6 +256,7 @@ export async function GET(req: import("next/server").NextRequest) {
         paymentStep,
         overallStatus: computeOverallStatus(deliverables, payment100),
         month: parseMonth(pnNo),
+        ...(goLiveDate ? { goLiveDate } : {}),
       });
     }
 

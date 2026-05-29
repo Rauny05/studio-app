@@ -1,5 +1,5 @@
-import { ProjectsGrid } from "@/components/projects/ProjectsGrid";
+import { redirect } from "next/navigation";
 
 export default function ProjectsPage() {
-  return <ProjectsGrid />;
+  redirect("/scripts");
 }

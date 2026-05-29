@@ -1329,11 +1329,20 @@ export function DeliverablesView() {
   const searchRef = useRef<HTMLInputElement>(null);
   const prevDataRef = useRef<string>("");
 
-  // Merge overrides + localRows into data for display
+  // Merge overrides + localRows into data for display.
+  // For goLiveDate: sheet value is the source of truth; override only wins if explicitly set.
   const displayData = useMemo(() => {
-    const sheetRows = data.map((row) => overrides[row.id] ?? row);
-    // Apply overrides to local rows too, prepend them so they appear first
-    const localWithOverrides = localRows.map((row) => overrides[row.id] ?? row);
+    const mergeRow = (row: DeliverableRow): DeliverableRow => {
+      const ov = overrides[row.id];
+      if (!ov) return row;
+      return {
+        ...ov,
+        // If override has no goLiveDate but the sheet does, keep sheet's value
+        goLiveDate: ov.goLiveDate ?? row.goLiveDate,
+      };
+    };
+    const sheetRows = data.map(mergeRow);
+    const localWithOverrides = localRows.map(mergeRow);
     return [...localWithOverrides, ...sheetRows];
   }, [data, overrides, localRows]);
 

@@ -10,7 +10,7 @@ import { usePush } from "@/hooks/use-push";
 
 const pageTitles: Record<string, string> = {
   "/dashboard":    "Dashboard",
-  "/projects":     "Projects",
+  "/scripts":      "Scripts",
   "/calendar":     "Calendar",
   "/deliverables": "Deliverables",
   "/settings":     "Settings",
