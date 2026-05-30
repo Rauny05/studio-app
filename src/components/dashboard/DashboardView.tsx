@@ -284,11 +284,11 @@ function GoLiveDates() {
     ]).then(([sheet, overridesEnv]) => {
       const rows: DeliverableRow[] = sheet.deliverables ?? [];
       const overrides: Record<string, DeliverableRow> = overridesEnv?.data ?? {};
-      // Sheet's goLiveDate is source of truth; override only wins when sheet has none
+      // goLiveDate always comes from the sheet; overrides never store it
       const merged = rows.map((r) => {
         const ov = overrides[r.id];
         if (!ov) return r;
-        return { ...ov, goLiveDate: r.goLiveDate ?? ov.goLiveDate };
+        return { ...ov, goLiveDate: r.goLiveDate };
       });
 
       const result = merged

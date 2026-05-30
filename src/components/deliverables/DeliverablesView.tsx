@@ -1330,17 +1330,12 @@ export function DeliverablesView() {
   const prevDataRef = useRef<string>("");
 
   // Merge overrides + localRows into data for display.
-  // For goLiveDate: sheet value is the source of truth; override only wins if explicitly set.
+  // goLiveDate always comes from the sheet — overrides never store it.
   const displayData = useMemo(() => {
     const mergeRow = (row: DeliverableRow): DeliverableRow => {
       const ov = overrides[row.id];
       if (!ov) return row;
-      return {
-        ...ov,
-        // Sheet's goLiveDate is the source of truth — always wins over override.
-        // Only fall back to override's date if the sheet has no date.
-        goLiveDate: row.goLiveDate ?? ov.goLiveDate,
-      };
+      return { ...ov, goLiveDate: row.goLiveDate };
     };
     const sheetRows = data.map(mergeRow);
     const localWithOverrides = localRows.map(mergeRow);
@@ -1377,33 +1372,8 @@ export function DeliverablesView() {
       setData(next);
 
       // Overlay server-side overrides so all users see the same saved state.
-      // Self-heal: if the sheet now provides a goLiveDate, remove any stale
-      // goLiveDate from the override so the sheet value always wins.
       if (overridesEnv?.data && typeof overridesEnv.data === "object") {
-        const rawOverrides = overridesEnv.data as Record<string, DeliverableRow>;
-        const sheetById = Object.fromEntries(next.map((r) => [r.id, r]));
-        let didHeal = false;
-        const healedOverrides = Object.fromEntries(
-          Object.entries(rawOverrides).map(([id, ov]) => {
-            const sheetRow = sheetById[id];
-            if (sheetRow?.goLiveDate && ov.goLiveDate && ov.goLiveDate !== sheetRow.goLiveDate) {
-              // Sheet has a date that differs — drop the stale override date
-              const { goLiveDate: _dropped, ...rest } = ov;
-              didHeal = true;
-              return [id, rest as DeliverableRow];
-            }
-            return [id, ov];
-          })
-        );
-        setOverrides(healedOverrides);
-        // Persist the healed overrides back to Redis so the fix survives page reload
-        if (didHeal) {
-          fetch("/api/sync/deliverable-overrides", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(healedOverrides),
-          }).catch(() => {/* non-critical */});
-        }
+        setOverrides(overridesEnv.data as Record<string, DeliverableRow>);
       }
 
       // Load locally-created rows
@@ -1504,10 +1474,14 @@ export function DeliverablesView() {
   const selectedRow = selectedId ? (displayData.find((r) => r.id === selectedId) ?? null) : null;
 
   async function handleSave(updated: DeliverableRow) {
-    const next = (prev: Record<string, DeliverableRow>) => ({ ...prev, [updated.id]: updated });
+    // Never store goLiveDate in overrides — it belongs to the sheet only.
+    // This prevents stale override dates from blocking sheet updates.
+    const { goLiveDate: _strip, ...overrideSafe } = updated;
+    const toStore = overrideSafe as DeliverableRow;
+    const next = (prev: Record<string, DeliverableRow>) => ({ ...prev, [updated.id]: toStore });
     setOverrides(next);
     // Persist to Redis so all web app users see the updated state
-    const currentOverrides = { ...overrides, [updated.id]: updated };
+    const currentOverrides = { ...overrides, [updated.id]: toStore };
     await fetch("/api/sync/deliverable-overrides", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
