@@ -1382,18 +1382,28 @@ export function DeliverablesView() {
       if (overridesEnv?.data && typeof overridesEnv.data === "object") {
         const rawOverrides = overridesEnv.data as Record<string, DeliverableRow>;
         const sheetById = Object.fromEntries(next.map((r) => [r.id, r]));
+        let didHeal = false;
         const healedOverrides = Object.fromEntries(
           Object.entries(rawOverrides).map(([id, ov]) => {
             const sheetRow = sheetById[id];
             if (sheetRow?.goLiveDate && ov.goLiveDate && ov.goLiveDate !== sheetRow.goLiveDate) {
-              // Sheet has a date — drop the stale override date
+              // Sheet has a date that differs — drop the stale override date
               const { goLiveDate: _dropped, ...rest } = ov;
+              didHeal = true;
               return [id, rest as DeliverableRow];
             }
             return [id, ov];
           })
         );
         setOverrides(healedOverrides);
+        // Persist the healed overrides back to Redis so the fix survives page reload
+        if (didHeal) {
+          fetch("/api/sync/deliverable-overrides", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(healedOverrides),
+          }).catch(() => {/* non-critical */});
+        }
       }
 
       // Load locally-created rows
