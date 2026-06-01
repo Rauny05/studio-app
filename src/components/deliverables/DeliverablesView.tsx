@@ -27,27 +27,27 @@ const TYPE_META: Record<string, { subject: string; linkLabel: string }> = {
 };
 
 function generateEmailText({
-  pocName, deliverableName, deliverableType, currentDate,
+  brand, deliverableName, deliverableType, currentDate,
   liveUrl, creatorName, agencyName, allDeliverables,
 }: {
-  pocName: string; deliverableName: string; deliverableType: string;
+  brand: string; deliverableName: string; deliverableType: string;
   currentDate: string; liveUrl: string; creatorName: string;
   agencyName: string; allDeliverables: Array<{ label: string; status: string }>;
 }): string {
-  const meta  = TYPE_META[deliverableType] ?? TYPE_META.general;
+  const meta   = TYPE_META[deliverableType] ?? TYPE_META.general;
   const byline = [creatorName, agencyName].filter(Boolean).join(" - ");
-  const list   = allDeliverables
+  // "Samsung circle to search reel posted (1 June 2026)"
+  const headline = `${brand} ${deliverableName} posted (${currentDate})`;
+  const list = allDeliverables
     .map((d) => `${d.label} - ${d.status === "Completed" ? "Completed" : "Pending"}`)
     .join("\n");
   return `Hi Salil,
 
-${deliverableName} posted (${currentDate})
+${headline}
 
-${meta.linkLabel}:
-${liveUrl || "—"}
+${meta.linkLabel}: ${liveUrl || ""}
 
 List of all deliverables${byline ? ` from ${byline}` : ""}
-
 ${list}
 
 Thanks`.trim();
@@ -922,7 +922,7 @@ function CompletionFlowModal({
     if (isVideoType) return;
     const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     const generated = generateEmailText({
-      pocName: row.pocName,
+      brand: row.brand,
       deliverableName: item.label,
       deliverableType: type,
       currentDate: today,
@@ -944,7 +944,7 @@ function CompletionFlowModal({
   function handleGenerate() {
     const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     const generated = generateEmailText({
-      pocName: row.pocName,
+      brand: row.brand,
       deliverableName: item.label,
       deliverableType: type,
       currentDate: today,
@@ -971,14 +971,14 @@ function CompletionFlowModal({
   }
 
   function handleGmail() {
-    const subj = encodeURIComponent(`${item.label} – ${row.brand}`);
+    const subj = encodeURIComponent(`${row.brand} ${item.label} posted`);
     const body = encodeURIComponent(email);
     const to   = "";
     window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subj}&body=${body}`, "_blank");
   }
 
   function handleOutlook() {
-    const subj = encodeURIComponent(`${item.label} – ${row.brand}`);
+    const subj = encodeURIComponent(`${row.brand} ${item.label} posted`);
     const body = encodeURIComponent(email);
     window.open(`https://outlook.live.com/mail/0/deeplink/compose?subject=${subj}&body=${body}`, "_blank");
   }
