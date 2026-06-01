@@ -8,13 +8,14 @@ const KEY = "studio:reminders";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const { id } = await params;
   const reminders = (await dataGet<Reminder[]>(KEY)) ?? [];
-  await dataSet(KEY, reminders.filter((r) => r.id !== params.id));
+  await dataSet(KEY, reminders.filter((r) => r.id !== id));
   return NextResponse.json({ ok: true });
 }

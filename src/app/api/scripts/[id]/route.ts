@@ -5,7 +5,7 @@ import { updateScript } from "@/lib/scripts-store";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
 
@@ -14,13 +14,14 @@ export async function PATCH(
   }
 
   try {
+    const { id } = await params;
     const body = await req.json() as { status?: "approved" | "pending" };
 
     if (body.status !== "approved" && body.status !== "pending") {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
-    const updated = await updateScript(params.id, {
+    const updated = await updateScript(id, {
       status: body.status,
       approved_at: body.status === "approved" ? new Date().toISOString() : null,
       approved_by: body.status === "approved" ? session.user.email : null,
