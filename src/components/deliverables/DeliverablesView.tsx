@@ -1335,7 +1335,7 @@ export function DeliverablesView() {
     const mergeRow = (row: DeliverableRow): DeliverableRow => {
       const ov = overrides[row.id];
       if (!ov) return row;
-      return { ...ov, goLiveDate: row.goLiveDate };
+      return { ...ov, goLiveDate: row.goLiveDate ?? ov.goLiveDate };
     };
     const sheetRows = data.map(mergeRow);
     const localWithOverrides = localRows.map(mergeRow);
