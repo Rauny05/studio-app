@@ -34,12 +34,14 @@ function ScriptCard({
   script,
   isAdmin,
   onUpdateDoc,
+  onDelete,
 }: {
   script: Script;
   isAdmin: boolean;
   onUpdateDoc: (scriptId: string, docId: string, status: "approved" | "pending") => void;
+  onDelete: (scriptId: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const approvedCount = script.docs.filter((d) => d.status === "approved").length;
   const totalCount = script.docs.length;
   const allApproved = totalCount > 0 && approvedCount === totalCount;
@@ -47,57 +49,56 @@ function ScriptCard({
   return (
     <div className={`script-card ${allApproved ? "script-card-approved" : ""}`}>
       {/* Card header */}
-      <div className="script-card-header" onClick={() => setExpanded((v) => !v)} style={{ cursor: "pointer" }}>
+      <div className="script-card-header">
         <InitialAvatar name={script.sender_name} email={script.sender_email} />
         <div className="script-card-sender">
           <span className="script-card-sender-name">{script.sender_name || script.sender_email}</span>
           <span className="script-card-sender-email">{script.sender_email}</span>
         </div>
         <div className="script-card-meta-right">
-          <span className={`script-card-badge ${allApproved ? "badge-approved" : "badge-pending"}`}>
-            {allApproved ? "All Approved" : `${approvedCount}/${totalCount} approved`}
-          </span>
           <span className="script-card-time">{formatDate(script.received_at)}</span>
+          {isAdmin && (
+            <button className="script-card-delete-btn" onClick={() => onDelete(script.id)} title="Delete">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Title */}
-      <div className="script-card-title" onClick={() => setExpanded((v) => !v)} style={{ cursor: "pointer" }}>
-        <span>{script.title}</span>
-        <svg
-          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round"
-          style={{ flexShrink: 0, opacity: 0.4, transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
-        >
+      {/* Title + progress */}
+      <div className="script-card-title-row" onClick={() => setExpanded((v) => !v)}>
+        <div className="script-card-title-text">
+          <span className="script-card-title">{script.title}</span>
+          <span className={`script-card-badge ${allApproved ? "badge-approved" : "badge-pending"}`}>
+            {allApproved ? "✓ All Approved" : `${approvedCount}/${totalCount} approved`}
+          </span>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          style={{ flexShrink: 0, opacity: 0.4, transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </div>
 
-      {/* Expandable docs list */}
+      {/* Progress bar */}
+      {totalCount > 0 && (
+        <div className="script-progress-bar">
+          <div className="script-progress-fill" style={{ width: `${(approvedCount / totalCount) * 100}%` }} />
+        </div>
+      )}
+
+      {/* Docs list — expanded by default */}
       {expanded && (
         <div className="script-docs-list">
           {totalCount === 0 ? (
             <div className="script-docs-empty">No Google Docs found in this email.</div>
           ) : (
             script.docs.map((doc) => (
-              <ScriptDocRow
-                key={doc.id}
-                doc={doc}
-                isAdmin={isAdmin}
-                onToggle={(status) => onUpdateDoc(script.id, doc.id, status)}
-              />
+              <ScriptDocRow key={doc.id} doc={doc} isAdmin={isAdmin} onToggle={(status) => onUpdateDoc(script.id, doc.id, status)} />
             ))
           )}
-        </div>
-      )}
-
-      {/* Progress bar */}
-      {totalCount > 0 && (
-        <div className="script-progress-bar">
-          <div
-            className="script-progress-fill"
-            style={{ width: `${(approvedCount / totalCount) * 100}%` }}
-          />
         </div>
       )}
     </div>
@@ -207,6 +208,11 @@ export function ScriptsBoard() {
     }
   }
 
+  async function handleDelete(scriptId: string) {
+    const res = await fetch(`/api/scripts/${scriptId}`, { method: "DELETE" });
+    if (res.ok) setScripts((prev) => prev.filter((s) => s.id !== scriptId));
+  }
+
   const filtered = scripts.filter((s) =>
     filter === "all" ? true : s.status === filter
   );
@@ -270,7 +276,7 @@ export function ScriptsBoard() {
           </div>
         ) : (
           filtered.map((script) => (
-            <ScriptCard key={script.id} script={script} isAdmin={isAdmin} onUpdateDoc={handleUpdateDoc} />
+            <ScriptCard key={script.id} script={script} isAdmin={isAdmin} onUpdateDoc={handleUpdateDoc} onDelete={handleDelete} />
           ))
         )}
       </div>

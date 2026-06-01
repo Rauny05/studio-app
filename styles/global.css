@@ -9397,3 +9397,42 @@ details[open] .pv-done-summary svg { transform: rotate(90deg); }
   border-radius: 2px;
   transition: width 0.3s ease;
 }
+
+/* ── Script card title row ───────────────────────────── */
+.script-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  margin-top: 10px;
+}
+
+.script-card-title-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.script-card-delete-btn {
+  background: none;
+  border: none;
+  color: var(--app-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.5;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+}
+
+.script-card-delete-btn:hover {
+  opacity: 1;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
