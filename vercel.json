@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node deploy.mjs && next build",
+  "buildCommand": "next build",
   "alias": ["rmmedia-studio.vercel.app"],
   "crons": [
     {
