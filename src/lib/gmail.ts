@@ -20,6 +20,27 @@ export interface GmailScriptEmail {
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1";
+const DRIVE_API = "https://www.googleapis.com/drive/v3";
+
+/** Fetch the title of a Google Doc by its document ID using the Drive API */
+async function fetchDocTitle(docId: string, accessToken: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${DRIVE_API}/files/${docId}?fields=name`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { name?: string };
+    return data.name?.replace(/\.gdoc$/i, "").trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Extract Google Doc ID from a docs.google.com URL */
+function extractDocId(url: string): string | null {
+  const match = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
 
 /** Exchange refresh token for a short-lived access token */
 export async function getAccessToken(): Promise<string> {
@@ -64,8 +85,9 @@ function extractTitle(subject: string): string {
 /**
  * Extract all Google Doc links with their names from email body.
  * Checks same line and previous line for a script name.
+ * If no name found, fetches the doc title from the Drive API.
  */
-function extractScriptDocs(text: string): ScriptDocEntry[] {
+async function extractScriptDocs(text: string, accessToken: string): Promise<ScriptDocEntry[]> {
   const DOC_PATTERN = /https:\/\/docs\.google\.com\/document\/[^\s"'<>)\]]+/gi;
   const results: ScriptDocEntry[] = [];
   let match: RegExpExecArray | null;
@@ -101,8 +123,13 @@ function extractScriptDocs(text: string): ScriptDocEntry[] {
       if (l && !l.match(/^https?:\/\//)) { prevLine = l; break; }
     }
 
-    const name = sameLine || prevLine || `Script ${results.length + 1}`;
-    results.push({ name, doc_url: url });
+    let name = sameLine || prevLine;
+    if (!name) {
+      // Try to get the real document title from Drive API
+      const docId = extractDocId(url);
+      if (docId) name = await fetchDocTitle(docId, accessToken) ?? "";
+    }
+    results.push({ name: name || `Script ${results.length + 1}`, doc_url: url });
   }
 
   return results;
@@ -195,7 +222,7 @@ export async function fetchNewScriptEmails(
       const { name: sender_name, email: sender_email } = parseSender(from);
 
       const bodyText = extractBodyText(msg.payload ?? {});
-      const docs = extractScriptDocs(bodyText);
+      const docs = await extractScriptDocs(bodyText, token);
       const title = extractTitle(subject);
 
       // Parse received_at: prefer internalDate (ms epoch) over Date header
@@ -286,7 +313,7 @@ export async function fetchMessagesSinceHistory(
       const from = get("From");
       const { name: sender_name, email: sender_email } = parseSender(from);
       const bodyText = extractBodyText(msg.payload ?? {});
-      const docs = extractScriptDocs(bodyText);
+      const docs = await extractScriptDocs(bodyText, token);
       const title = extractTitle(subject);
       const received_at = msg.internalDate
         ? new Date(Number(msg.internalDate)).toISOString()
