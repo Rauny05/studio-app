@@ -63,28 +63,46 @@ function extractTitle(subject: string): string {
 
 /**
  * Extract all Google Doc links with their names from email body.
- * Looks for patterns like:
- *   "Script Name: https://docs.google.com/..."
- *   "1. Script Name - https://docs.google.com/..."
- *   Or bare URLs (named "Script 1", "Script 2" etc.)
+ * Checks same line and previous line for a script name.
  */
 function extractScriptDocs(text: string): ScriptDocEntry[] {
   const DOC_PATTERN = /https:\/\/docs\.google\.com\/document\/[^\s"'<>)\]]+/gi;
   const results: ScriptDocEntry[] = [];
   let match: RegExpExecArray | null;
+  const lines = text.split("\n");
 
   while ((match = DOC_PATTERN.exec(text)) !== null) {
-    const url = match[0].replace(/[.,;]+$/, ""); // strip trailing punctuation
-    // Look at the text on the same line before the URL for a name
-    const lineStart = text.lastIndexOf("\n", match.index) + 1;
-    const before = text.slice(lineStart, match.index).trim();
-    // Strip leading list markers: "1.", "-", "*", "•"
-    const name = before
+    const url = match[0].replace(/[.,;:]+$/, "");
+
+    // Find which line this URL is on
+    let charCount = 0;
+    let urlLineIdx = 0;
+    for (let i = 0; i < lines.length; i++) {
+      charCount += lines[i].length + 1;
+      if (charCount > match.index) { urlLineIdx = i; break; }
+    }
+
+    // Helper: clean a candidate name string
+    const clean = (s: string) => s
       .replace(/^[\d]+[.)]\s*/, "")
       .replace(/^[-*•]\s*/, "")
       .replace(/[:\-–—]\s*$/, "")
+      .replace(/https?:\/\/\S+/g, "") // remove any URLs
       .trim();
-    results.push({ name: name || `Script ${results.length + 1}`, doc_url: url });
+
+    // 1. Text on the same line BEFORE the URL
+    const lineStart = text.lastIndexOf("\n", match.index) + 1;
+    const sameLine = clean(text.slice(lineStart, match.index));
+
+    // 2. Previous non-empty line
+    let prevLine = "";
+    for (let i = urlLineIdx - 1; i >= 0; i--) {
+      const l = clean(lines[i]);
+      if (l && !l.match(/^https?:\/\//)) { prevLine = l; break; }
+    }
+
+    const name = sameLine || prevLine || `Script ${results.length + 1}`;
+    results.push({ name, doc_url: url });
   }
 
   return results;
