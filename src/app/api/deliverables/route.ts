@@ -166,15 +166,12 @@ function parseGoLiveDate(raw: string): string | null {
   // Already ISO
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
 
-  // DD/MM/YYYY or MM/DD/YYYY
+  // DD/MM/YYYY — always treat as day-first (Indian/UK format)
   const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if (slashMatch) {
-    let [, a, b, y] = slashMatch;
+    let [, d, m, y] = slashMatch;
     if (y.length === 2) y = `20${y}`;
-    const aNum = parseInt(a, 10);
-    const bNum = parseInt(b, 10);
-    const [day, month] = aNum > 12 ? [aNum, bNum] : [bNum, aNum];
-    return toISODate(parseInt(y, 10), month, day);
+    return toISODate(parseInt(y, 10), parseInt(m, 10), parseInt(d, 10));
   }
 
   // Strip ordinal suffixes (1st→1, 2nd→2, 4th→4) and day-of-week names
