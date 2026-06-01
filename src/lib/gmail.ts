@@ -74,10 +74,11 @@ function parseSender(from: string): { name: string; email: string } {
   return { name: from.trim(), email: from.trim() };
 }
 
-/** Strip "Scripts to check –/:" prefix and return the remainder as title */
+/** Strip "Scripts to check", "Fwd:", "Re:", "Fw:" prefixes and return the remainder */
 function extractTitle(subject: string): string {
   const cleaned = subject
-    .replace(/^scripts\s+to\s+check\s*[–—:-]\s*/i, "")
+    .replace(/^(fwd?|re)\s*:\s*/i, "")       // strip Fwd: / Re: / Fw:
+    .replace(/^scripts\s+to\s+check\s*[–—:\-]\s*/i, "")
     .trim();
   return cleaned || subject;
 }
@@ -105,12 +106,17 @@ async function extractScriptDocs(text: string, accessToken: string): Promise<Scr
     }
 
     // Helper: clean a candidate name string
-    const clean = (s: string) => s
-      .replace(/^[\d]+[.)]\s*/, "")
-      .replace(/^[-*•]\s*/, "")
-      .replace(/[:\-–—]\s*$/, "")
-      .replace(/https?:\/\/\S+/g, "") // remove any URLs
-      .trim();
+    const clean = (s: string) => {
+      const r = s
+        .replace(/^[>|\s]+/, "")          // strip Gmail quote markers (>, |) and leading spaces
+        .replace(/^[\d]+[.)]\s*/, "")     // strip list numbers
+        .replace(/^[-*•]\s*/, "")         // strip bullet markers
+        .replace(/[:\-–—]\s*$/, "")       // strip trailing colons/dashes
+        .replace(/https?:\/\/\S+/g, "")   // remove any URLs
+        .trim();
+      // Reject if result is just symbols/whitespace or very short non-word
+      return /\w{2,}/.test(r) ? r : "";
+    };
 
     // 1. Text on the same line BEFORE the URL
     const lineStart = text.lastIndexOf("\n", match.index) + 1;
