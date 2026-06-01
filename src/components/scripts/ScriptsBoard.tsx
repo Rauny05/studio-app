@@ -176,14 +176,23 @@ export function ScriptsBoard() {
     }
   }
 
+  const [pollError, setPollError] = useState<string | null>(null);
+
   async function handleManualPoll() {
     setPolling(true);
+    setPollError(null);
     try {
-      // Trigger a server-side poll via a dedicated client-facing refresh endpoint
-      await fetch("/api/gmail/poll-trigger", { method: "POST" });
-      // Small delay then refetch
-      await new Promise((r) => setTimeout(r, 800));
+      const res = await fetch("/api/gmail/poll-trigger", { method: "POST" });
+      const data = await res.json() as { ok?: boolean; error?: string; checked?: number; added?: number };
+      if (!res.ok) {
+        setPollError(data.error ?? `Error ${res.status}`);
+      } else {
+        setPollError(null);
+      }
+      await new Promise((r) => setTimeout(r, 400));
       await fetchScripts();
+    } catch (e) {
+      setPollError(String(e));
     } finally {
       setPolling(false);
     }
@@ -247,6 +256,12 @@ export function ScriptsBoard() {
           </button>
         </div>
       </div>
+
+      {pollError && (
+        <div style={{ padding: "8px 12px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 12, color: "#ef4444", marginBottom: 12 }}>
+          Gmail error: {pollError}
+        </div>
+      )}
 
       {/* Cards */}
       <div className="scripts-list">

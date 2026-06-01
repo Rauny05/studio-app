@@ -9258,3 +9258,27 @@ details[open] .pv-done-summary svg { transform: rotate(90deg); }
 
   .script-card-title { font-size: 14px; }
 }
+
+/* ── Calendar go-live chips ────────────────────────────── */
+.calendar-golive-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #059669;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.calendar-golive-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

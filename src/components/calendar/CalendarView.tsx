@@ -6,6 +6,7 @@ import { DELIVERABLE_CONFIG } from "@/components/kanban/tag-colors";
 import { CardModal } from "@/components/kanban/CardModal";
 import { useReelsStore } from "@/lib/reels-store";
 import type { Card, Board } from "@/types/kanban";
+import type { DeliverableRow } from "@/app/api/deliverables/route";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -389,6 +390,28 @@ export function CalendarView() {
   });
   const [isMobile, setIsMobile] = useState(false);
 
+  // Go-live dates from deliverables sheet
+  const [goLiveMap, setGoLiveMap] = useState<Record<string, { brand: string }[]>>({});
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/deliverables", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/sync/deliverable-overrides", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([sheet, overridesEnv]) => {
+      const rows: DeliverableRow[] = sheet?.deliverables ?? [];
+      const overrides: Record<string, DeliverableRow> = overridesEnv?.data ?? {};
+      const map: Record<string, { brand: string }[]> = {};
+      rows.forEach((r) => {
+        const ov = overrides[r.id];
+        const date = r.goLiveDate ?? ov?.goLiveDate;
+        if (!date) return;
+        if (!map[date]) map[date] = [];
+        map[date].push({ brand: r.brand });
+      });
+      setGoLiveMap(map);
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 680px)");
     setIsMobile(mq.matches);
@@ -535,6 +558,12 @@ export function CalendarView() {
                     );
                   })}
                   {cell.cards.length > 3 && <span className="calendar-more-badge">+{cell.cards.length - 3} more</span>}
+                  {/* Go-live date chips from deliverables sheet */}
+                  {(goLiveMap[dateStr] ?? []).map((gl, gi) => (
+                    <div key={`gl-${gi}`} className="calendar-golive-chip" title={`Go live: ${gl.brand}`}>
+                      🚀 <span>{gl.brand}</span>
+                    </div>
+                  ))}
                 </div>
                 <DayReels dateStr={dateStr} />
               </div>
