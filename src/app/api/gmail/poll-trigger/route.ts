@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, checked: emails.length, added });
   } catch (err) {
-    console.error("[gmail/poll-trigger] error:", err);
-    return NextResponse.json({ error: "Poll failed" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[gmail/poll-trigger] error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
