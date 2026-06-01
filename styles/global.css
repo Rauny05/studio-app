@@ -9282,3 +9282,118 @@ details[open] .pv-done-summary svg { transform: rotate(90deg); }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── Script docs list (expanded card) ───────────────── */
+.script-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.script-docs-list {
+  margin-top: 10px;
+  border-top: 1px solid var(--app-border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.script-docs-empty {
+  font-size: 12px;
+  color: var(--app-text-muted);
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.script-doc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.script-doc-row.script-doc-approved {
+  border-color: rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.03);
+}
+
+.script-doc-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.script-doc-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 2px solid var(--app-border);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  color: #fff;
+}
+
+.script-doc-checkbox.checked {
+  background: #10b981;
+  border-color: #10b981;
+}
+
+.script-doc-checkbox:hover:not(.checked) {
+  border-color: #10b981;
+}
+
+.script-doc-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--app-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.script-doc-name.script-doc-name-done {
+  text-decoration: line-through;
+  color: var(--app-text-muted);
+}
+
+.script-doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.script-doc-approved-by {
+  font-size: 10px;
+  color: #059669;
+  font-weight: 500;
+}
+
+.script-progress-bar {
+  height: 3px;
+  background: var(--app-border);
+  border-radius: 2px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.script-progress-fill {
+  height: 100%;
+  background: #10b981;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}

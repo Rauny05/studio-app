@@ -4,10 +4,15 @@
  * extracts title + Google Doc URL, returns structured records.
  */
 
+export interface ScriptDocEntry {
+  name: string;
+  doc_url: string;
+}
+
 export interface GmailScriptEmail {
   gmail_message_id: string;
   title: string;
-  doc_url: string | null;
+  docs: ScriptDocEntry[];   // All script docs found in the email
   sender_name: string;
   sender_email: string;
   received_at: string; // ISO 8601
@@ -56,10 +61,33 @@ function extractTitle(subject: string): string {
   return cleaned || subject;
 }
 
-/** Find first docs.google.com/document/ URL in a string */
-function extractDocUrl(text: string): string | null {
-  const match = text.match(/https:\/\/docs\.google\.com\/document\/[^\s"'<>)]+/i);
-  return match ? match[0] : null;
+/**
+ * Extract all Google Doc links with their names from email body.
+ * Looks for patterns like:
+ *   "Script Name: https://docs.google.com/..."
+ *   "1. Script Name - https://docs.google.com/..."
+ *   Or bare URLs (named "Script 1", "Script 2" etc.)
+ */
+function extractScriptDocs(text: string): ScriptDocEntry[] {
+  const DOC_PATTERN = /https:\/\/docs\.google\.com\/document\/[^\s"'<>)\]]+/gi;
+  const results: ScriptDocEntry[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = DOC_PATTERN.exec(text)) !== null) {
+    const url = match[0].replace(/[.,;]+$/, ""); // strip trailing punctuation
+    // Look at the text on the same line before the URL for a name
+    const lineStart = text.lastIndexOf("\n", match.index) + 1;
+    const before = text.slice(lineStart, match.index).trim();
+    // Strip leading list markers: "1.", "-", "*", "•"
+    const name = before
+      .replace(/^[\d]+[.)]\s*/, "")
+      .replace(/^[-*•]\s*/, "")
+      .replace(/[:\-–—]\s*$/, "")
+      .trim();
+    results.push({ name: name || `Script ${results.length + 1}`, doc_url: url });
+  }
+
+  return results;
 }
 
 /** Decode base64url to UTF-8 string */
@@ -149,7 +177,7 @@ export async function fetchNewScriptEmails(
       const { name: sender_name, email: sender_email } = parseSender(from);
 
       const bodyText = extractBodyText(msg.payload ?? {});
-      const doc_url = extractDocUrl(bodyText);
+      const docs = extractScriptDocs(bodyText);
       const title = extractTitle(subject);
 
       // Parse received_at: prefer internalDate (ms epoch) over Date header
@@ -163,7 +191,7 @@ export async function fetchNewScriptEmails(
       results.push({
         gmail_message_id: id,
         title,
-        doc_url,
+        docs,
         sender_name,
         sender_email,
         received_at,
@@ -240,13 +268,13 @@ export async function fetchMessagesSinceHistory(
       const from = get("From");
       const { name: sender_name, email: sender_email } = parseSender(from);
       const bodyText = extractBodyText(msg.payload ?? {});
-      const doc_url = extractDocUrl(bodyText);
+      const docs = extractScriptDocs(bodyText);
       const title = extractTitle(subject);
       const received_at = msg.internalDate
         ? new Date(Number(msg.internalDate)).toISOString()
         : new Date().toISOString();
 
-      results.push({ gmail_message_id: id, title, doc_url, sender_name, sender_email, received_at });
+      results.push({ gmail_message_id: id, title, docs, sender_name, sender_email, received_at });
     } catch {
       continue;
     }

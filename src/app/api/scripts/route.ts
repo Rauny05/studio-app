@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const script: Script = {
       id: randomUUID(),
       title: body.title,
-      doc_url: body.doc_url ?? null,
+      docs: (body.docs ?? []),
       sender_name: body.sender_name ?? "",
       sender_email: body.sender_email ?? "",
       received_at: body.received_at ?? new Date().toISOString(),

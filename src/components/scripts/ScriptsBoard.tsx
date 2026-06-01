@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import type { Script } from "@/lib/scripts-store";
+import type { Script, ScriptDoc } from "@/lib/scripts-store";
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -11,7 +11,6 @@ function formatDate(iso: string) {
   const mins = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
   if (hours < 24) return `${hours}h ago`;
@@ -23,14 +22,9 @@ function InitialAvatar({ name, email }: { name: string; email: string }) {
   const initials = name
     ? name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
     : email[0].toUpperCase();
-  // Deterministic color from email
   const hue = Array.from(email).reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
   return (
-    <span
-      className="script-card-avatar"
-      style={{ background: `hsl(${hue},50%,40%)` }}
-      title={`${name || email} <${email}>`}
-    >
+    <span className="script-card-avatar" style={{ background: `hsl(${hue},50%,40%)` }} title={`${name || email} <${email}>`}>
       {initials}
     </span>
   );
@@ -39,81 +33,123 @@ function InitialAvatar({ name, email }: { name: string; email: string }) {
 function ScriptCard({
   script,
   isAdmin,
-  onApprove,
-  onUnapprove,
+  onUpdateDoc,
 }: {
   script: Script;
   isAdmin: boolean;
-  onApprove: (id: string) => void;
-  onUnapprove: (id: string) => void;
+  onUpdateDoc: (scriptId: string, docId: string, status: "approved" | "pending") => void;
 }) {
-  const approved = script.status === "approved";
+  const [expanded, setExpanded] = useState(false);
+  const approvedCount = script.docs.filter((d) => d.status === "approved").length;
+  const totalCount = script.docs.length;
+  const allApproved = totalCount > 0 && approvedCount === totalCount;
 
   return (
-    <div className={`script-card ${approved ? "script-card-approved" : ""}`}>
-      <div className="script-card-header">
+    <div className={`script-card ${allApproved ? "script-card-approved" : ""}`}>
+      {/* Card header */}
+      <div className="script-card-header" onClick={() => setExpanded((v) => !v)} style={{ cursor: "pointer" }}>
         <InitialAvatar name={script.sender_name} email={script.sender_email} />
         <div className="script-card-sender">
           <span className="script-card-sender-name">{script.sender_name || script.sender_email}</span>
           <span className="script-card-sender-email">{script.sender_email}</span>
         </div>
         <div className="script-card-meta-right">
-          <span className={`script-card-badge ${approved ? "badge-approved" : "badge-pending"}`}>
-            {approved ? "Approved" : "Pending"}
+          <span className={`script-card-badge ${allApproved ? "badge-approved" : "badge-pending"}`}>
+            {allApproved ? "All Approved" : `${approvedCount}/${totalCount} approved`}
           </span>
           <span className="script-card-time">{formatDate(script.received_at)}</span>
         </div>
       </div>
 
-      <div className="script-card-title">{script.title}</div>
-
-      <div className="script-card-footer">
-        {script.doc_url ? (
-          <a
-            href={script.doc_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="script-card-doc-link"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-            Open Doc
-          </a>
-        ) : (
-          <span className="script-card-no-doc">No Doc attached</span>
-        )}
-
-        {isAdmin && (
-          <div className="script-card-actions">
-            {!approved ? (
-              <button
-                className="script-card-approve-btn"
-                onClick={() => onApprove(script.id)}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Approve
-              </button>
-            ) : (
-              <button
-                className="script-card-unapprove-btn"
-                onClick={() => onUnapprove(script.id)}
-              >
-                Unapprove
-              </button>
-            )}
-          </div>
-        )}
+      {/* Title */}
+      <div className="script-card-title" onClick={() => setExpanded((v) => !v)} style={{ cursor: "pointer" }}>
+        <span>{script.title}</span>
+        <svg
+          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round"
+          style={{ flexShrink: 0, opacity: 0.4, transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </div>
 
-      {approved && script.approved_by && (
-        <div className="script-card-approved-by">
-          ✓ Approved by {script.approved_by} · {formatDate(script.approved_at!)}
+      {/* Expandable docs list */}
+      {expanded && (
+        <div className="script-docs-list">
+          {totalCount === 0 ? (
+            <div className="script-docs-empty">No Google Docs found in this email.</div>
+          ) : (
+            script.docs.map((doc) => (
+              <ScriptDocRow
+                key={doc.id}
+                doc={doc}
+                isAdmin={isAdmin}
+                onToggle={(status) => onUpdateDoc(script.id, doc.id, status)}
+              />
+            ))
+          )}
         </div>
       )}
+
+      {/* Progress bar */}
+      {totalCount > 0 && (
+        <div className="script-progress-bar">
+          <div
+            className="script-progress-fill"
+            style={{ width: `${(approvedCount / totalCount) * 100}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScriptDocRow({
+  doc,
+  isAdmin,
+  onToggle,
+}: {
+  doc: ScriptDoc;
+  isAdmin: boolean;
+  onToggle: (status: "approved" | "pending") => void;
+}) {
+  const approved = doc.status === "approved";
+  return (
+    <div className={`script-doc-row ${approved ? "script-doc-approved" : ""}`}>
+      <div className="script-doc-info">
+        {isAdmin && (
+          <button
+            className={`script-doc-checkbox ${approved ? "checked" : ""}`}
+            onClick={() => onToggle(approved ? "pending" : "approved")}
+            title={approved ? "Mark as pending" : "Approve"}
+          >
+            {approved && (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </button>
+        )}
+        <span className={`script-doc-name ${approved ? "script-doc-name-done" : ""}`}>{doc.name}</span>
+      </div>
+      <div className="script-doc-actions">
+        {approved && doc.approved_by && (
+          <span className="script-doc-approved-by">✓ {doc.approved_by.split("@")[0]}</span>
+        )}
+        <a
+          href={doc.doc_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="script-card-doc-link"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+          Open
+        </a>
+      </div>
     </div>
   );
 }
@@ -125,6 +161,7 @@ export function ScriptsBoard() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "approved">("all");
   const [polling, setPolling] = useState(false);
+  const [pollError, setPollError] = useState<string | null>(null);
 
   const fetchScripts = useCallback(async () => {
     try {
@@ -132,69 +169,41 @@ export function ScriptsBoard() {
       if (!res.ok) return;
       const data = await res.json() as { scripts: Script[] };
       setScripts(data.scripts);
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
   }, []);
 
-  // Initial load
+  useEffect(() => { void fetchScripts(); }, [fetchScripts]);
   useEffect(() => {
-    void fetchScripts();
-  }, [fetchScripts]);
-
-  // 30-second polling for real-time updates
-  useEffect(() => {
-    const id = setInterval(() => {
-      void fetchScripts();
-    }, 30_000);
+    const id = setInterval(() => void fetchScripts(), 30_000);
     return () => clearInterval(id);
   }, [fetchScripts]);
-
-  async function handleApprove(id: string) {
-    const res = await fetch(`/api/scripts/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "approved" }),
-    });
-    if (res.ok) {
-      const data = await res.json() as { script: Script };
-      setScripts((prev) => prev.map((s) => s.id === id ? data.script : s));
-    }
-  }
-
-  async function handleUnapprove(id: string) {
-    const res = await fetch(`/api/scripts/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "pending" }),
-    });
-    if (res.ok) {
-      const data = await res.json() as { script: Script };
-      setScripts((prev) => prev.map((s) => s.id === id ? data.script : s));
-    }
-  }
-
-  const [pollError, setPollError] = useState<string | null>(null);
 
   async function handleManualPoll() {
     setPolling(true);
     setPollError(null);
     try {
       const res = await fetch("/api/gmail/poll-trigger", { method: "POST" });
-      const data = await res.json() as { ok?: boolean; error?: string; checked?: number; added?: number };
-      if (!res.ok) {
-        setPollError(data.error ?? `Error ${res.status}`);
-      } else {
-        setPollError(null);
-      }
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok) setPollError(data.error ?? `Error ${res.status}`);
       await new Promise((r) => setTimeout(r, 400));
       await fetchScripts();
     } catch (e) {
       setPollError(String(e));
     } finally {
       setPolling(false);
+    }
+  }
+
+  async function handleUpdateDoc(scriptId: string, docId: string, status: "approved" | "pending") {
+    const res = await fetch(`/api/scripts/${scriptId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, docId }),
+    });
+    if (res.ok) {
+      const data = await res.json() as { script: Script };
+      setScripts((prev) => prev.map((s) => s.id === scriptId ? data.script : s));
     }
   }
 
@@ -207,7 +216,6 @@ export function ScriptsBoard() {
 
   return (
     <div className="scripts-board">
-      {/* Header */}
       <div className="scripts-board-header">
         <div className="scripts-board-stats">
           <span className="scripts-stat">
@@ -225,31 +233,17 @@ export function ScriptsBoard() {
             <span className="scripts-stat-label">Approved</span>
           </span>
         </div>
-
         <div className="scripts-board-controls">
-          {/* Filter tabs */}
           <div className="scripts-filter-tabs">
             {(["all", "pending", "approved"] as const).map((f) => (
-              <button
-                key={f}
-                className={`scripts-filter-tab ${filter === f ? "active" : ""}`}
-                onClick={() => setFilter(f)}
-              >
+              <button key={f} className={`scripts-filter-tab ${filter === f ? "active" : ""}`} onClick={() => setFilter(f)}>
                 {f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
             ))}
           </div>
-
-          {/* Manual refresh */}
-          <button
-            className={`scripts-refresh-btn ${polling ? "scripts-refreshing" : ""}`}
-            onClick={handleManualPoll}
-            disabled={polling}
-            title="Check for new emails"
-          >
+          <button className={`scripts-refresh-btn ${polling ? "scripts-refreshing" : ""}`} onClick={handleManualPoll} disabled={polling} title="Check for new emails">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 4 23 10 17 10" />
-              <polyline points="1 20 1 14 7 14" />
+              <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
             {polling ? "Checking…" : "Refresh"}
@@ -263,34 +257,20 @@ export function ScriptsBoard() {
         </div>
       )}
 
-      {/* Cards */}
       <div className="scripts-list">
         {loading ? (
-          <div className="scripts-empty">
-            <div className="scripts-empty-spinner" />
-            <span>Loading scripts…</span>
-          </div>
+          <div className="scripts-empty"><div className="scripts-empty-spinner" /><span>Loading scripts…</span></div>
         ) : filtered.length === 0 ? (
           <div className="scripts-empty">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
               <polyline points="22,6 12,13 2,6" />
             </svg>
-            <span>
-              {filter === "all"
-                ? `No scripts yet. Send an email to raunaq@rmmedia.in with "Scripts to check" in the subject.`
-                : `No ${filter} scripts.`}
-            </span>
+            <span>{filter === "all" ? `No scripts yet. Send an email to raunaq@rmmedia.in with "Scripts to check" in the subject.` : `No ${filter} scripts.`}</span>
           </div>
         ) : (
           filtered.map((script) => (
-            <ScriptCard
-              key={script.id}
-              script={script}
-              isAdmin={isAdmin}
-              onApprove={handleApprove}
-              onUnapprove={handleUnapprove}
-            />
+            <ScriptCard key={script.id} script={script} isAdmin={isAdmin} onUpdateDoc={handleUpdateDoc} />
           ))
         )}
       </div>

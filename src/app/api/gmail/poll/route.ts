@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       const result = await addScript({
         id: randomUUID(),
         title: email.title,
-        doc_url: email.doc_url ?? null,
+        docs: email.docs.map((d, i) => ({ id: `${randomUUID()}-${i}`, name: d.name, doc_url: d.doc_url, status: "pending" as const, approved_at: null, approved_by: null })),
         sender_name: email.sender_name,
         sender_email: email.sender_email,
         received_at: email.received_at,
