@@ -43,4 +43,4 @@ android/app/build/
 android/.gradle/
 android/build/
 *.apk
-*.aab
+*.aab.claude/worktrees/
