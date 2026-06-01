@@ -9565,3 +9565,31 @@ details[open] .pv-done-summary svg { transform: rotate(90deg); }
   color: var(--app-text);
   border-color: var(--app-text-muted);
 }
+
+/* ── Obsidian save button + actions row ─────────────── */
+.script-doc-card-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.script-obsidian-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.script-obsidian-btn:hover {
+  background: rgba(124, 58, 237, 0.15);
+  border-color: rgba(124, 58, 237, 0.4);
+}

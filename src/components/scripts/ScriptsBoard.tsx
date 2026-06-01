@@ -30,6 +30,41 @@ function InitialAvatar({ name, email }: { name: string; email: string }) {
   );
 }
 
+function saveToObsidian(script: Script, doc: ScriptDoc) {
+  const approvedDate = doc.approved_at
+    ? new Date(doc.approved_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+  const content = [
+    "---",
+    `status: approved`,
+    `sender: "${script.sender_name} <${script.sender_email}>"`,
+    `campaign: "${script.title}"`,
+    `approved: ${approvedDate}`,
+    `approved_by: "${doc.approved_by ?? ""}"`,
+    `doc_url: "${doc.doc_url}"`,
+    "tags: [scripts, approved]",
+    "---",
+    "",
+    `# ${doc.name}`,
+    "",
+    `**Campaign:** ${script.title}`,
+    `**From:** ${script.sender_name} (${script.sender_email})`,
+    `**Approved:** ${approvedDate}${doc.approved_by ? ` by ${doc.approved_by}` : ""}`,
+    "",
+    "## Document",
+    "",
+    `[Open in Google Docs](${doc.doc_url})`,
+    "",
+    "## Notes",
+    "",
+  ].join("\n");
+
+  const noteName = `Scripts/${doc.name.replace(/[/\\:*?"<>|]/g, "-")}`;
+  const uri = `obsidian://new?name=${encodeURIComponent(noteName)}&content=${encodeURIComponent(content)}&silent`;
+  window.open(uri, "_blank");
+}
+
 /** A single script doc shown as its own full card */
 function ScriptDocCard({
   script,
@@ -100,20 +135,35 @@ function ScriptDocCard({
           </span>
         )}
 
-        {isAdmin && (
-          approved ? (
-            <button className="script-doc-card-unapprove-btn" onClick={() => onToggle("pending")}>
-              Unapprove
-            </button>
-          ) : (
-            <button className="script-doc-card-approve-btn" onClick={() => onToggle("approved")}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
+        <div className="script-doc-card-actions-right">
+          {approved && (
+            <button
+              className="script-obsidian-btn"
+              onClick={() => saveToObsidian(script, doc)}
+              title="Save to Obsidian"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C8.5 2 6 4.5 6 8c0 1.5.5 2.9 1.4 4L4 19l2 1 2-3h8l2 3 2-1-3.4-7C17.5 10.9 18 9.5 18 8c0-3.5-2.5-6-6-6zm0 2c2.4 0 4 1.6 4 4s-1.6 4-4 4-4-1.6-4-4 1.6-4 4-4z"/>
               </svg>
-              Approve
+              Save to Obsidian
             </button>
-          )
-        )}
+          )}
+
+          {isAdmin && (
+            approved ? (
+              <button className="script-doc-card-unapprove-btn" onClick={() => onToggle("pending")}>
+                Unapprove
+              </button>
+            ) : (
+              <button className="script-doc-card-approve-btn" onClick={() => onToggle("approved")}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Approve
+              </button>
+            )
+          )}
+        </div>
       </div>
     </div>
   );
