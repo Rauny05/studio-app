@@ -8655,6 +8655,9 @@ details[open] .pv-done-summary svg { transform: rotate(90deg); }
   border: 1px solid var(--app-border);
   background: var(--app-surface, rgba(255,255,255,0.03));
   text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
   transition: border-color 0.18s, background 0.18s;
 }
 

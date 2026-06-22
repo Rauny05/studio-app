@@ -402,7 +402,7 @@ function CreateDeliverableModal({
 }
 
 // ── Deliverable Modal ─────────────────────────────────────────────────────────
-function DeliverableModal({
+export function DeliverableModal({
   row,
   onClose,
   onSave,

@@ -6,6 +6,7 @@ import { useKanbanStore } from "@/store/kanban-store";
 import { DELIVERABLE_CONFIG, PRIORITY_CONFIG } from "@/components/kanban/tag-colors";
 import type { Card } from "@/types/kanban";
 import type { DeliverableRow } from "@/app/api/deliverables/route";
+import { DeliverableModal } from "@/components/deliverables/DeliverablesView";
 import { useReelsStore } from "@/lib/reels-store";
 import {
   usePriorityVideosStore,
@@ -272,10 +273,9 @@ function DeliverablesSummary() {
 // ── Go Live Dates widget ──────────────────────────────────────────────────────
 
 function GoLiveDates() {
-  const [entries, setEntries] = useState<{
-    id: string; brand: string; goLiveDate: string; deliverableNames: string[];
-  }[]>([]);
+  const [allRows, setAllRows] = useState<DeliverableRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -284,25 +284,12 @@ function GoLiveDates() {
     ]).then(([sheet, overridesEnv]) => {
       const rows: DeliverableRow[] = sheet.deliverables ?? [];
       const overrides: Record<string, DeliverableRow> = overridesEnv?.data ?? {};
-      // Sheet goLiveDate wins; fall back to override's date if sheet has none
       const merged = rows.map((r) => {
         const ov = overrides[r.id];
         if (!ov) return r;
         return { ...ov, goLiveDate: r.goLiveDate ?? ov.goLiveDate };
       });
-
-      const result = merged
-        .filter((r) => r.goLiveDate)
-        .map((r) => {
-          // Only show reels, videos, YT, shorts, events
-          const names = r.deliverables
-            .filter((d) => /reel|video|short|yt\b|event/i.test(d.label))
-            .map((d) => d.label);
-          return { id: r.id, brand: r.brand, goLiveDate: r.goLiveDate!, deliverableNames: names.length > 0 ? names : [r.brand] };
-        })
-        .sort((a, b) => a.goLiveDate.localeCompare(b.goLiveDate));
-
-      setEntries(result);
+      setAllRows(merged);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -310,9 +297,61 @@ function GoLiveDates() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Split into upcoming and past
-  const upcoming = entries.filter((e) => new Date(e.goLiveDate + "T00:00:00") >= today);
-  const past     = entries.filter((e) => new Date(e.goLiveDate + "T00:00:00") < today);
+  const entries = allRows
+    .filter((r) => r.goLiveDate)
+    .sort((a, b) => a.goLiveDate!.localeCompare(b.goLiveDate!));
+
+  const upcoming = entries.filter((e) => new Date(e.goLiveDate! + "T00:00:00") >= today);
+  const past     = entries.filter((e) => new Date(e.goLiveDate! + "T00:00:00") < today);
+
+  const selectedRow = allRows.find((r) => r.id === selectedId) ?? null;
+
+  async function handleSave(updated: DeliverableRow) {
+    const overridesRes = await fetch("/api/sync/deliverable-overrides", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null);
+    const existing: Record<string, DeliverableRow> = overridesRes?.data ?? {};
+    const newOverrides = { ...existing, [updated.id]: updated };
+    await fetch("/api/sync/deliverable-overrides", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ overrides: newOverrides }),
+    });
+    setAllRows((prev) => prev.map((r) => r.id === updated.id ? { ...r, ...updated, goLiveDate: r.goLiveDate ?? updated.goLiveDate } : r));
+  }
+
+  function renderCard(e: DeliverableRow, extra?: string) {
+    const d = new Date(e.goLiveDate! + "T00:00:00");
+    const isToday = d.getTime() === today.getTime();
+    const isTomorrow = d.getTime() === today.getTime() + 86400000;
+    const daysLeft = Math.round((d.getTime() - today.getTime()) / 86400000);
+    const dayLabel = isToday ? "Today" : isTomorrow ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short" });
+    const dateLabel = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    const names = e.deliverables
+      .filter((d) => /reel|video|short|yt\b|event/i.test(d.label))
+      .map((d) => d.label);
+    const chips = names.length > 0 ? names : [e.brand];
+    return (
+      <button
+        key={e.id}
+        type="button"
+        onClick={() => setSelectedId(e.id)}
+        className={`golive-card ${isToday ? "golive-card-today" : ""} ${extra ?? ""}`}
+      >
+        <div className="golive-card-date">
+          <span className="golive-card-day">{dayLabel}</span>
+          <span className="golive-card-num">{dateLabel}</span>
+          {!isToday && !isTomorrow && daysLeft > 0 && <span className="golive-card-countdown">in {daysLeft}d</span>}
+        </div>
+        <div className="golive-card-body">
+          <span className="golive-card-brand golive-card-brand-hero">{e.brand}</span>
+          <div className="golive-card-chips">
+            {chips.map((n, i) => (
+              <span key={i} className="golive-card-chip">{n}</span>
+            ))}
+          </div>
+        </div>
+      </button>
+    );
+  }
 
   if (!loading && entries.length === 0) return null;
 
@@ -333,31 +372,7 @@ function GoLiveDates() {
         <div className="dl-dash-loading"><div className="dl-spinner" style={{ width: 18, height: 18, borderWidth: 1.5 }} /><span>Loading…</span></div>
       ) : (
         <div className="golive-scroll">
-          {upcoming.map((e) => {
-            const d = new Date(e.goLiveDate + "T00:00:00");
-            const isToday = d.getTime() === today.getTime();
-            const isTomorrow = d.getTime() === today.getTime() + 86400000;
-            const daysLeft = Math.round((d.getTime() - today.getTime()) / 86400000);
-            const dayLabel = isToday ? "Today" : isTomorrow ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short" });
-            const dateLabel = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-            return (
-              <a key={e.id} href={`/deliverables?open=${e.id}`} className={`golive-card ${isToday ? "golive-card-today" : ""}`}>
-                <div className="golive-card-date">
-                  <span className="golive-card-day">{dayLabel}</span>
-                  <span className="golive-card-num">{dateLabel}</span>
-                  {!isToday && !isTomorrow && <span className="golive-card-countdown">in {daysLeft}d</span>}
-                </div>
-                <div className="golive-card-body">
-                  <span className="golive-card-brand golive-card-brand-hero">{e.brand}</span>
-                  <div className="golive-card-chips">
-                    {e.deliverableNames.map((n, i) => (
-                      <span key={i} className="golive-card-chip">{n}</span>
-                    ))}
-                  </div>
-                </div>
-              </a>
-            );
-          })}
+          {upcoming.map((e) => renderCard(e))}
           {upcoming.length === 0 && (
             <div className="golive-empty">No upcoming go-live dates. Open a deliverable card to set one.</div>
           )}
@@ -368,27 +383,18 @@ function GoLiveDates() {
         <details className="golive-past-section">
           <summary className="golive-past-summary">{past.length} past</summary>
           <div className="golive-scroll golive-scroll-past">
-            {past.slice().reverse().map((e) => {
-              const d = new Date(e.goLiveDate + "T00:00:00");
-              return (
-                <a key={e.id} href={`/deliverables?open=${e.id}`} className="golive-card golive-card-past">
-                  <div className="golive-card-date">
-                    <span className="golive-card-day">{d.toLocaleDateString("en-US", { weekday: "short" })}</span>
-                    <span className="golive-card-num">{d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
-                  </div>
-                  <div className="golive-card-body">
-                    <span className="golive-card-brand golive-card-brand-hero">{e.brand}</span>
-                    <div className="golive-card-chips">
-                      {e.deliverableNames.map((n, i) => (
-                        <span key={i} className="golive-card-chip">{n}</span>
-                      ))}
-                    </div>
-                  </div>
-                </a>
-              );
-            })}
+            {past.slice().reverse().map((e) => renderCard(e, "golive-card-past"))}
           </div>
         </details>
+      )}
+
+      {selectedRow && (
+        <DeliverableModal
+          row={selectedRow}
+          onClose={() => setSelectedId(null)}
+          onSave={handleSave}
+          readOnly={false}
+        />
       )}
     </div>
   );
