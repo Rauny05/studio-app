@@ -89,9 +89,7 @@ export function Sidebar() {
   }, [pathname]);
 
   const closeOnMobile = useCallback(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 768) {
-      setSidebarCollapsed(true);
-    }
+    setSidebarCollapsed(true);
   }, [setSidebarCollapsed]);
 
   const isMobileOpen = mounted && !sidebarCollapsed;
