@@ -341,14 +341,14 @@ function GoLiveDates() {
             const dayLabel = isToday ? "Today" : isTomorrow ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short" });
             const dateLabel = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
             return (
-              <a key={e.id} href="/deliverables" className={`golive-card ${isToday ? "golive-card-today" : ""}`}>
+              <a key={e.id} href={`/deliverables?open=${e.id}`} className={`golive-card ${isToday ? "golive-card-today" : ""}`}>
                 <div className="golive-card-date">
                   <span className="golive-card-day">{dayLabel}</span>
                   <span className="golive-card-num">{dateLabel}</span>
                   {!isToday && !isTomorrow && <span className="golive-card-countdown">in {daysLeft}d</span>}
                 </div>
                 <div className="golive-card-body">
-                  <span className="golive-card-brand">{e.brand}</span>
+                  <span className="golive-card-brand golive-card-brand-hero">{e.brand}</span>
                   <div className="golive-card-chips">
                     {e.deliverableNames.map((n, i) => (
                       <span key={i} className="golive-card-chip">{n}</span>
@@ -371,13 +371,13 @@ function GoLiveDates() {
             {past.slice().reverse().map((e) => {
               const d = new Date(e.goLiveDate + "T00:00:00");
               return (
-                <a key={e.id} href="/deliverables" className="golive-card golive-card-past">
+                <a key={e.id} href={`/deliverables?open=${e.id}`} className="golive-card golive-card-past">
                   <div className="golive-card-date">
                     <span className="golive-card-day">{d.toLocaleDateString("en-US", { weekday: "short" })}</span>
                     <span className="golive-card-num">{d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
                   </div>
                   <div className="golive-card-body">
-                    <span className="golive-card-brand">{e.brand}</span>
+                    <span className="golive-card-brand golive-card-brand-hero">{e.brand}</span>
                     <div className="golive-card-chips">
                       {e.deliverableNames.map((n, i) => (
                         <span key={i} className="golive-card-chip">{n}</span>

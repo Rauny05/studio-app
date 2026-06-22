@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import { DeliverablesView } from "@/components/deliverables/DeliverablesView";
 
 export default function DeliverablesPage() {
-  return <DeliverablesView />;
+  return (
+    <Suspense>
+      <DeliverablesView />
+    </Suspense>
+  );
 }

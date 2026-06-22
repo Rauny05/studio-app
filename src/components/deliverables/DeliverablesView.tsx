@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { DeliverableRow, DeliverableItem, ActivityEntry } from "@/app/api/deliverables/route";
 import { usePermission } from "@/hooks/use-permission";
@@ -1309,6 +1310,7 @@ const FILTER_TABS: { key: FilterTab; label: string }[] = [
 export function DeliverablesView() {
   const permission = usePermission("deliverables");
   const canEdit = permission === "edit";
+  const searchParams = useSearchParams();
   const [data, setData] = useState<DeliverableRow[]>([]);
   const [overrides, setOverrides] = useState<Record<string, DeliverableRow>>({});
   const [localRows, setLocalRows] = useState<DeliverableRow[]>([]);
@@ -1325,6 +1327,12 @@ export function DeliverablesView() {
   const [liveIndicator, setLiveIndicator] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+
+  // Deep-link from Go Live dashboard cards: /deliverables?open=<id>
+  useEffect(() => {
+    const openId = searchParams.get("open");
+    if (openId) setSelectedId(openId);
+  }, [searchParams]);
   const [copyState, setCopyState] = useState<"idle" | "ok">("idle");
   const searchRef = useRef<HTMLInputElement>(null);
   const prevDataRef = useRef<string>("");
