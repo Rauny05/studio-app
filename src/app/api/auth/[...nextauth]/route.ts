@@ -30,20 +30,27 @@ export const authOptions: NextAuthOptions = {
         const email = credentials.email.toLowerCase().trim();
         const passcode = credentials.passcode.trim();
 
-        // Admin can sign in with their own dedicated code
+        // Primary admin
         if (email === ADMIN_EMAIL) {
           const adminCode = process.env.ADMIN_ACCESS_CODE;
           if (!adminCode || passcode !== adminCode) return null;
           return { id: email, email, name: "Raunaq", image: null };
         }
 
-        // Team members use the shared access code
-        const expectedCode = process.env.APP_ACCESS_CODE;
-        if (!expectedCode || passcode !== expectedCode) return null;
-
+        // Load user record first — needed for both admin and member checks
         const users = await loadUsers();
         const found = users.find((u) => u.email === email);
         if (!found) return null;
+
+        // Users with admin role can use either ADMIN_ACCESS_CODE or APP_ACCESS_CODE
+        const adminCode = process.env.ADMIN_ACCESS_CODE;
+        const memberCode = process.env.APP_ACCESS_CODE;
+
+        const validCode =
+          (adminCode && passcode === adminCode) ||
+          (memberCode && passcode === memberCode);
+
+        if (!validCode) return null;
 
         return { id: email, email, name: found.name ?? email, image: null };
       },
