@@ -37,20 +37,13 @@ export const authOptions: NextAuthOptions = {
           return { id: email, email, name: "Raunaq", image: null };
         }
 
-        // Load user record first — needed for both admin and member checks
+        // All invited users authenticate with the same access code
         const users = await loadUsers();
         const found = users.find((u) => u.email === email);
         if (!found) return null;
 
-        // Users with admin role can use either ADMIN_ACCESS_CODE or APP_ACCESS_CODE
-        const adminCode = process.env.ADMIN_ACCESS_CODE;
-        const memberCode = process.env.APP_ACCESS_CODE;
-
-        const validCode =
-          (adminCode && passcode === adminCode) ||
-          (memberCode && passcode === memberCode);
-
-        if (!validCode) return null;
+        const code = process.env.ADMIN_ACCESS_CODE ?? process.env.APP_ACCESS_CODE;
+        if (!code || passcode !== code) return null;
 
         return { id: email, email, name: found.name ?? email, image: null };
       },
