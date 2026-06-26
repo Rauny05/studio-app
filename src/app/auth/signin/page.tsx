@@ -9,23 +9,11 @@ function SignInContent() {
   const error = params.get("error");
 
   // Detect Capacitor / Android WebView — skip Google OAuth entirely
-  const [isNativeApp, setIsNativeApp] = useState(false);
-  const [mode, setMode] = useState<"google" | "passcode">("passcode");
+  const [mode, setMode] = useState<"google" | "admin">("google");
   const [email, setEmail] = useState("");
   const [passcode, setPasscode] = useState("");
   const [loading, setLoading] = useState(false);
   const [passcodeError, setPasscodeError] = useState("");
-
-  useEffect(() => {
-    // window.Capacitor is injected by Capacitor runtime in the WebView
-    const native =
-      typeof window !== "undefined" &&
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((window as any).Capacitor !== undefined ||
-        /wv|WebView/.test(navigator.userAgent));
-    setIsNativeApp(native);
-    if (native) setMode("passcode");
-  }, []);
 
   async function handlePasscodeSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,8 +29,6 @@ function SignInContent() {
     if (result?.error) {
       setPasscodeError("Invalid email or access code.");
     } else if (result?.url) {
-      // Use replace() so the login page is removed from history
-      // — prevents Android back button from returning to sign-in
       window.location.replace(result.url);
     }
   }
@@ -64,12 +50,30 @@ function SignInContent() {
           </div>
         )}
 
-        {/* Passcode form — for all team members */}
-        {mode === "passcode" && (
+        {mode === "google" && (
+          <div className="auth-passcode-form">
+            <button
+              type="button"
+              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              className="auth-passcode-btn"
+            >
+              Sign in with Google
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("admin")}
+              className="auth-admin-google"
+            >
+              Admin access code
+            </button>
+          </div>
+        )}
+
+        {mode === "admin" && (
           <form onSubmit={handlePasscodeSubmit} className="auth-passcode-form">
             <input
               type="email"
-              placeholder="Your email"
+              placeholder="Admin email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -89,16 +93,13 @@ function SignInContent() {
             <button type="submit" className="auth-passcode-btn" disabled={loading}>
               {loading ? "Signing in…" : "Sign In"}
             </button>
-            {/* Admin-only: Google sign-in hidden link */}
-            {!isNativeApp && (
-              <button
-                type="button"
-                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                className="auth-admin-google"
-              >
-                Admin? Sign in with Google
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setMode("google")}
+              className="auth-admin-google"
+            >
+              ← Back
+            </button>
           </form>
         )}
 

@@ -37,15 +37,8 @@ export const authOptions: NextAuthOptions = {
           return { id: email, email, name: "Raunaq", image: null };
         }
 
-        // All invited users authenticate with the same access code
-        const users = await loadUsers();
-        const found = users.find((u) => u.email === email);
-        if (!found) return null;
-
-        const code = process.env.ADMIN_ACCESS_CODE ?? process.env.APP_ACCESS_CODE;
-        if (!code || passcode !== code) return null;
-
-        return { id: email, email, name: found.name ?? email, image: null };
+        // Code login is restricted to admin only
+        return null;
       },
     }),
   ],
