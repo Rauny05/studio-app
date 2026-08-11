@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { dataGet, dataSet } from "@/lib/data-store";
 import { verifyMobileToken } from "@/lib/mobile-auth";
+import { notifyNewlyCompletedDeliverables } from "@/lib/activepieces-webhook";
+import type { DeliverableRow } from "@/app/api/deliverables/route";
 
 const ALLOWED_KEYS = new Set(["kanban", "todos", "reels", "priority-videos", "cash", "deliverable-overrides", "deliverable-local-rows"]);
 
@@ -66,12 +68,37 @@ export async function POST(
 
   try {
     const body = await req.json();
+    const redisKey = `studio:sync:${key}`;
+
+    // Deliverable completions are registered here — capture prior state so we can
+    // detect newly-completed items and notify Activepieces after the write succeeds.
+    let previousOverrides: Record<string, DeliverableRow> | null = null;
+    if (key === "deliverable-overrides") {
+      const previousEnvelope = await dataGet<SyncEnvelope<Record<string, DeliverableRow>>>(redisKey).catch(() => null);
+      previousOverrides = previousEnvelope?.data ?? {};
+    }
+
     const envelope: SyncEnvelope = {
       data: body,
       updatedAt: new Date().toISOString(),
     };
-    const redisKey = `studio:sync:${key}`;
     await dataSet(redisKey, envelope);
+
+    if (key === "deliverable-overrides" && previousOverrides) {
+      // Body shape varies by caller: either { overrides: {...} } or the raw map itself.
+      const newOverrides = (
+        body && typeof body === "object" && "overrides" in body
+          ? (body as { overrides: Record<string, DeliverableRow> }).overrides
+          : body
+      ) as Record<string, DeliverableRow>;
+
+      // Awaited (bounded by a 5s timeout inside) so serverless doesn't freeze the
+      // function before the webhook fires, but errors never fail this response.
+      await notifyNewlyCompletedDeliverables(previousOverrides, newOverrides ?? {}).catch((err) => {
+        console.error("[sync/deliverable-overrides] Activepieces notification failed:", err);
+      });
+    }
+
     return NextResponse.json({ ok: true, updatedAt: envelope.updatedAt });
   } catch (err) {
     console.error(`[sync/${key}] POST failed:`, err);
