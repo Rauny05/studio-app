@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { dataGet } from "@/lib/data-store";
 import type { DeliverableRow } from "@/app/api/deliverables/route";
+import { parseGoLiveDate } from "@/lib/go-live-date";
 
 const PUSH_SUBS_KEY = "studio:push:subscriptions";
 const OVERRIDES_KEY = "studio:sync:deliverable-overrides";
@@ -116,17 +117,18 @@ export async function GET(req: NextRequest) {
         const brand = (row[1] ?? "").trim();
         if (!brand) continue;
         const id = pnNo || `row-${i}`;
-        // minimal row shape — just enough for override merging
-        sheetRows.push({ id, pnNo, brand } as DeliverableRow);
+        const goLiveDate = parseGoLiveDate((row[4] ?? "").trim()) ?? undefined;
+        sheetRows.push({ id, pnNo, brand, goLiveDate } as DeliverableRow);
       }
     }
   } catch { /* non-fatal */ }
 
-  // Build merged list: start with overrides (which have goLiveDate), fill in brand from sheet if needed
-  const all: DeliverableRow[] = Object.values(overrides).map((ov) => {
-    const sheet = sheetRows.find((r) => r.id === ov.id);
-    return { ...sheet, ...ov };
-  });
+  // Sheet is the source of truth for brand and go-live date; overrides only
+  // fill in rows the sheet no longer has. Covers every sheet row, not just saved ones.
+  const all: DeliverableRow[] = sheetRows.map((r) => ({ ...overrides[r.id], ...r }));
+  for (const ov of Object.values(overrides)) {
+    if (!sheetRows.some((r) => r.id === ov.id)) all.push(ov);
+  }
 
   // ── 4. Find rows going live today / tomorrow ─────────────────────────────
   type Bucket = { row: DeliverableRow; label: string };

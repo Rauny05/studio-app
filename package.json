@@ -68,6 +68,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "node --experimental-strip-types --no-warnings --test tests/*.test.ts",
     "remotion": "remotion studio",
     "render": "remotion render",
     "deploy": "node deploy.mjs",
