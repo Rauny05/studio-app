@@ -1,4 +1,5 @@
 import type { DeliverableItem, DeliverableRow } from "@/app/api/deliverables/route";
+import { findNewlyCompleted } from "@/lib/deliverable-diff";
 
 const ACTIVEPIECES_WEBHOOK_URL = "https://cloud.activepieces.com/api/v1/webhooks/HQ9CE9MLBf4l7ElvjHN7F";
 
@@ -57,25 +58,6 @@ export async function notifyNewlyCompletedDeliverables(
   previousOverrides: Record<string, DeliverableRow>,
   newOverrides: Record<string, DeliverableRow>
 ) {
-  const notifications: Promise<void>[] = [];
-
-  for (const row of Object.values(newOverrides)) {
-    if (!row?.deliverables) continue;
-    const prevRow = previousOverrides[row.id];
-
-    for (const item of row.deliverables) {
-      if (item.status !== "Completed") continue;
-
-      const prevItem = item.id
-        ? prevRow?.deliverables.find((d) => d.id === item.id)
-        : prevRow?.deliverables.find((d) => d.label === item.label);
-
-      const wasAlreadyCompleted = prevItem?.status === "Completed";
-      if (!wasAlreadyCompleted) {
-        notifications.push(notifyDeliverableCompleted(row, item));
-      }
-    }
-  }
-
-  await Promise.allSettled(notifications);
+  const completed = findNewlyCompleted(previousOverrides, newOverrides);
+  await Promise.allSettled(completed.map(({ row, item }) => notifyDeliverableCompleted(row, item)));
 }

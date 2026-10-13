@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { DeliverableRow, DeliverableItem, ActivityEntry } from "@/app/api/deliverables/route";
+import { mergeSheetRow } from "@/lib/deliverable-merge";
 import { usePermission } from "@/hooks/use-permission";
 
 // ── Deliverable-type helpers ──────────────────────────────────────────────────
@@ -1340,13 +1341,13 @@ export function DeliverablesView() {
   // Merge overrides + localRows into data for display.
   // goLiveDate always comes from the sheet — overrides never store it.
   const displayData = useMemo(() => {
-    const mergeRow = (row: DeliverableRow): DeliverableRow => {
+    const mergeLocalRow = (row: DeliverableRow): DeliverableRow => {
       const ov = overrides[row.id];
       if (!ov) return row;
       return { ...ov, goLiveDate: row.goLiveDate ?? ov.goLiveDate };
     };
-    const sheetRows = data.map(mergeRow);
-    const localWithOverrides = localRows.map(mergeRow);
+    const sheetRows = data.map((row) => mergeSheetRow(row, overrides[row.id]));
+    const localWithOverrides = localRows.map(mergeLocalRow);
     return [...localWithOverrides, ...sheetRows];
   }, [data, overrides, localRows]);
 

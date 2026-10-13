@@ -6,6 +6,7 @@ import { useKanbanStore } from "@/store/kanban-store";
 import { DELIVERABLE_CONFIG, PRIORITY_CONFIG } from "@/components/kanban/tag-colors";
 import type { Card } from "@/types/kanban";
 import type { DeliverableRow } from "@/app/api/deliverables/route";
+import { mergeSheetRow } from "@/lib/deliverable-merge";
 import { DeliverableModal } from "@/components/deliverables/DeliverablesView";
 import { useReelsStore } from "@/lib/reels-store";
 import {
@@ -284,11 +285,7 @@ function GoLiveDates() {
     ]).then(([sheet, overridesEnv]) => {
       const rows: DeliverableRow[] = sheet.deliverables ?? [];
       const overrides: Record<string, DeliverableRow> = overridesEnv?.data ?? {};
-      const merged = rows.map((r) => {
-        const ov = overrides[r.id];
-        if (!ov) return r;
-        return { ...ov, goLiveDate: r.goLiveDate ?? ov.goLiveDate };
-      });
+      const merged = rows.map((r) => mergeSheetRow(r, overrides[r.id]));
       setAllRows(merged);
       setLoading(false);
     }).catch(() => setLoading(false));

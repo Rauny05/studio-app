@@ -92,8 +92,6 @@ export async function POST(
           : body
       ) as Record<string, DeliverableRow>;
 
-      // Awaited (bounded by a 5s timeout inside) so serverless doesn't freeze the
-      // function before the webhook fires, but errors never fail this response.
       await notifyNewlyCompletedDeliverables(previousOverrides, newOverrides ?? {}).catch((err) => {
         console.error("[sync/deliverable-overrides] Activepieces notification failed:", err);
       });
