@@ -102,6 +102,8 @@ export async function GET(req: NextRequest) {
   // ── 2. Load overrides from Redis (contains goLiveDate) ───────────────────
   const envelope = await dataGet<{ data: Record<string, DeliverableRow> }>(OVERRIDES_KEY).catch(() => null);
   const overrides: Record<string, DeliverableRow> = envelope?.data ?? {};
+  const hiddenEnv = await dataGet<{ data: string[] }>("studio:sync:deliverable-hidden").catch(() => null);
+  const hidden = new Set<string>(Array.isArray(hiddenEnv?.data) ? hiddenEnv.data : []);
 
   // ── 3. Load sheet rows to get brand names ────────────────────────────────
   let sheetRows: DeliverableRow[] = [];
@@ -125,10 +127,11 @@ export async function GET(req: NextRequest) {
 
   // Sheet is the source of truth for brand and go-live date; overrides only
   // fill in rows the sheet no longer has. Covers every sheet row, not just saved ones.
-  const all: DeliverableRow[] = sheetRows.map((r) => ({ ...overrides[r.id], ...r }));
+  const merged: DeliverableRow[] = sheetRows.map((r) => ({ ...overrides[r.id], ...r }));
   for (const ov of Object.values(overrides)) {
-    if (!sheetRows.some((r) => r.id === ov.id)) all.push(ov);
+    if (!sheetRows.some((r) => r.id === ov.id)) merged.push(ov);
   }
+  const all = merged.filter((r) => !hidden.has(r.id));
 
   // ── 4. Find rows going live today / tomorrow ─────────────────────────────
   type Bucket = { row: DeliverableRow; label: string };

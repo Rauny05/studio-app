@@ -6,7 +6,7 @@ import { verifyMobileToken } from "@/lib/mobile-auth";
 import { notifyNewlyCompletedDeliverables } from "@/lib/activepieces-webhook";
 import type { DeliverableRow } from "@/app/api/deliverables/route";
 
-const ALLOWED_KEYS = new Set(["kanban", "todos", "reels", "priority-videos", "cash", "deliverable-overrides", "deliverable-local-rows"]);
+const ALLOWED_KEYS = new Set(["kanban", "todos", "reels", "priority-videos", "cash", "deliverable-overrides", "deliverable-local-rows", "deliverable-hidden"]);
 
 interface SyncEnvelope<T = unknown> {
   data: T;

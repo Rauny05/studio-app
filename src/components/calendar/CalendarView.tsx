@@ -397,8 +397,10 @@ export function CalendarView() {
     Promise.all([
       fetch("/api/deliverables", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/sync/deliverable-overrides", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([sheet, overridesEnv]) => {
-      const rows: DeliverableRow[] = sheet?.deliverables ?? [];
+      fetch("/api/sync/deliverable-hidden", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([sheet, overridesEnv, hiddenEnv]) => {
+      const hidden: string[] = Array.isArray(hiddenEnv?.data) ? hiddenEnv.data : [];
+      const rows: DeliverableRow[] = (sheet?.deliverables ?? []).filter((r: DeliverableRow) => !hidden.includes(r.id));
       const overrides: Record<string, DeliverableRow> = overridesEnv?.data ?? {};
       const map: Record<string, { brand: string }[]> = {};
       rows.forEach((r) => {

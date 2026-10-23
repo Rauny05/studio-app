@@ -408,14 +408,19 @@ export function DeliverableModal({
   onClose,
   onSave,
   onDelete,
+  hiddenFromApp = false,
+  onUnhide,
   readOnly = false,
 }: {
   row: DeliverableRow;
   onClose: () => void;
   onSave: (updated: DeliverableRow) => Promise<void>;
   onDelete?: () => Promise<void>;
+  hiddenFromApp?: boolean;
+  onUnhide?: () => Promise<void>;
   readOnly?: boolean;
 }) {
+  const isSheetRow = !row.id.startsWith("local-");
   const { data: session } = useSession();
   const userEmail = session?.user?.email ?? session?.user?.name ?? "unknown";
 
@@ -808,14 +813,22 @@ export function DeliverableModal({
         <div className="dl-modal-footer">
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button className="kanban-btn-secondary" onClick={onClose}>Cancel</button>
-            {onDelete && (
+            {hiddenFromApp && onUnhide && (
+              <button className="kanban-btn-secondary" onClick={async () => { await onUnhide(); onClose(); }}>
+                Unhide card
+              </button>
+            )}
+            {onDelete && !hiddenFromApp && (
               <button
                 className="dl-delete-card-btn"
                 onClick={async () => {
-                  if (!confirm("Delete this card? This can't be undone.")) return;
+                  const msg = isSheetRow
+                    ? "Hide this card from the app for everyone? The sheet isn't changed, and you can restore it with “Show hidden”."
+                    : "Delete this card? This can't be undone.";
+                  if (!confirm(msg)) return;
                   await onDelete();
                 }}
-                title="Delete this card"
+                title={isSheetRow ? "Hide this card (sheet is not changed)" : "Delete this card"}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6" />
@@ -823,7 +836,7 @@ export function DeliverableModal({
                   <path d="M10 11v6M14 11v6" />
                   <path d="M9 6V4h6v2" />
                 </svg>
-                Delete card
+                {isSheetRow ? "Hide card" : "Delete card"}
               </button>
             )}
           </div>
@@ -1315,6 +1328,8 @@ export function DeliverablesView() {
   const [data, setData] = useState<DeliverableRow[]>([]);
   const [overrides, setOverrides] = useState<Record<string, DeliverableRow>>({});
   const [localRows, setLocalRows] = useState<DeliverableRow[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [showHidden, setShowHidden] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1348,17 +1363,19 @@ export function DeliverablesView() {
     };
     const sheetRows = data.map((row) => mergeSheetRow(row, overrides[row.id]));
     const localWithOverrides = localRows.map(mergeLocalRow);
-    return [...localWithOverrides, ...sheetRows];
-  }, [data, overrides, localRows]);
+    const all = [...localWithOverrides, ...sheetRows];
+    return showHidden ? all : all.filter((r) => !hiddenIds.includes(r.id));
+  }, [data, overrides, localRows, hiddenIds, showHidden]);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true); else setSyncing(true);
     setError(null);
     try {
-      const [sheetRes, overridesEnv, localRowsEnv] = await Promise.all([
+      const [sheetRes, overridesEnv, localRowsEnv, hiddenEnv] = await Promise.all([
         fetch("/api/deliverables", { cache: "no-store" }),
         fetch("/api/sync/deliverable-overrides", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null),
         fetch("/api/sync/deliverable-local-rows", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null),
+        fetch("/api/sync/deliverable-hidden", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null),
       ]);
       const json = await sheetRes.json();
 
@@ -1386,6 +1403,7 @@ export function DeliverablesView() {
       }
 
       // Load locally-created rows
+      if (Array.isArray(hiddenEnv?.data)) setHiddenIds(hiddenEnv.data as string[]);
       if (Array.isArray(localRowsEnv?.data)) {
         setLocalRows(localRowsEnv.data as DeliverableRow[]);
       }
@@ -1508,6 +1526,21 @@ export function DeliverablesView() {
     });
   }
 
+  // Sheet rows can't be deleted (sheet is the source of truth), so they're hidden
+  // for everyone via a shared id list and can be restored from "Show hidden".
+  async function setHidden(id: string, hide: boolean) {
+    const env = await fetch("/api/sync/deliverable-hidden", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null);
+    const current: string[] = Array.isArray(env?.data) ? env.data : hiddenIds;
+    const next = hide ? Array.from(new Set([...current, id])) : current.filter((x) => x !== id);
+    setHiddenIds(next);
+    if (hide) setSelectedId(null);
+    await fetch("/api/sync/deliverable-hidden", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    });
+  }
+
   async function handleDelete(id: string) {
     const next = localRows.filter((r) => r.id !== id);
     setLocalRows(next);
@@ -1533,6 +1566,15 @@ export function DeliverablesView() {
           </div>
           <p className="dl-subheading">
             {loading ? "Syncing from Google Sheets…" : `${filtered.length} of ${displayData.length} deliverables`}
+            {!loading && hiddenIds.length > 0 && (
+              <button
+                className="kanban-btn-secondary"
+                style={{ marginLeft: 10, padding: "2px 8px", fontSize: 11 }}
+                onClick={() => setShowHidden((v) => !v)}
+              >
+                {showHidden ? "Hide hidden" : `Show hidden (${hiddenIds.length})`}
+              </button>
+            )}
             {lastFetched && !loading && (
               <span className="dl-last-fetched"> · synced {lastFetched.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
             )}
@@ -1745,7 +1787,9 @@ export function DeliverablesView() {
           row={selectedRow}
           onClose={() => setSelectedId(null)}
           onSave={handleSave}
-          onDelete={selectedRow.id.startsWith("local-") ? () => handleDelete(selectedRow.id) : undefined}
+          onDelete={selectedRow.id.startsWith("local-") ? () => handleDelete(selectedRow.id) : canEdit ? () => setHidden(selectedRow.id, true) : undefined}
+          hiddenFromApp={hiddenIds.includes(selectedRow.id)}
+          onUnhide={() => setHidden(selectedRow.id, false)}
           readOnly={!canEdit}
         />
       )}
