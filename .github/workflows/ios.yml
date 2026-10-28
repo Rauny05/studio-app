@@ -108,3 +108,42 @@ jobs:
             ios/build.log
             ios/test.log
             ios/build/ui.xcresult
+
+  mac-catalyst:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - name: Generate project
+        working-directory: ios
+        run: xcodegen generate
+      - name: Build Mac app (ad-hoc signed)
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild build -project RMStudio.xcodeproj -scheme RMStudio -configuration Release \
+            -destination 'platform=macOS,variant=Mac Catalyst' -derivedDataPath build-mac \
+            CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" 2>&1 | tee mac-build.log | grep -E "error:|BUILD" | head -60
+      - name: Package .app
+        working-directory: ios
+        run: |
+          APP=$(find build-mac/Build/Products -name RMStudio.app -maxdepth 3 | head -1)
+          echo "APP=$APP"; codesign -dv "$APP" 2>&1 | head -5 || true
+          ditto -c -k --keepParent "$APP" RMStudio-mac.zip
+      - name: Launch and screenshot
+        working-directory: ios
+        continue-on-error: true
+        run: |
+          APP=$(find build-mac/Build/Products -name RMStudio.app -maxdepth 3 | head -1)
+          open "$APP" --args -ui-testing-signed-out
+          sleep 10
+          pgrep -x RMStudio && echo "RUNNING" || echo "NOT RUNNING"
+          screencapture -x mac-signin.png || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RMStudio-mac
+          path: |
+            ios/RMStudio-mac.zip
+            ios/mac-signin.png
+            ios/mac-build.log
