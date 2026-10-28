@@ -39,6 +39,8 @@ final class AppModel {
     var paymentRemindersOn: Bool { didSet { UserDefaults.standard.set(paymentRemindersOn, forKey: "pref.payments"); rescheduleNotifications() } }
 
     let baseURL: URL
+    /// DEBUG-only: sample data, no network (see Fixtures.swift). Always false in Release.
+    let isFixture: Bool
     private let tokenBox: TokenBox
     private let disk: DiskStore
     private let queue: OfflineQueue
@@ -50,9 +52,16 @@ final class AppModel {
     init() {
         let configured = Bundle.main.object(forInfoDictionaryKey: "RMStudioBaseURL") as? String
         baseURL = URL(string: configured ?? "") ?? URL(string: "https://rmmedia-studio.vercel.app")!
+        #if DEBUG
+        isFixture = Fixtures.isActive
+        #else
+        isFixture = false
+        #endif
         let token = CommandLine.arguments.contains("-ui-testing-signed-out") ? nil : Keychain.get("token")
         tokenBox = TokenBox(token)
-        disk = DiskStore(directory: DiskStore.defaultDirectory())
+        disk = DiskStore(directory: isFixture
+            ? FileManager.default.temporaryDirectory.appendingPathComponent("rm-fixture-" + UUID().uuidString)
+            : DiskStore.defaultDirectory())
         queue = OfflineQueue(store: disk)
         let defaults = UserDefaults.standard
         goLiveRemindersOn = defaults.object(forKey: "pref.golive") as? Bool ?? true
@@ -71,6 +80,12 @@ final class AppModel {
             Keychain.delete("token")
             tokenBox.token = nil
         }
+        #if DEBUG
+        if isFixture {
+            user = AuthUser(name: "Raunaq", email: "raunaq@rmmedia.in", role: "admin")
+            workspace = Fixtures.workspace()
+        }
+        #endif
         monitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in
                 guard let self else { return }
@@ -130,7 +145,7 @@ final class AppModel {
     // MARK: Sync
 
     func syncNow() {
-        guard isSignedIn else { return }
+        guard isSignedIn, !isFixture else { return }
         refreshTask?.cancel()
         refreshTask = Task { [weak self] in
             guard let self else { return }
@@ -141,7 +156,7 @@ final class AppModel {
     }
 
     func refresh() async {
-        guard isSignedIn, !isRefreshing else { return }
+        guard isSignedIn, !isRefreshing, !isFixture else { return }
         isRefreshing = true
         defer { isRefreshing = false }
         let result = await WorkspaceLoader.refresh(backend: backend, current: workspace, isAdmin: isAdmin)
@@ -245,6 +260,7 @@ final class AppModel {
     // MARK: Push + notifications
 
     func requestNotificationPermission() {
+        guard !isFixture else { return }
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
             if granted { Task { @MainActor in UIApplication.shared.registerForRemoteNotifications() } }
         }
@@ -261,6 +277,7 @@ final class AppModel {
     }
 
     func rescheduleNotifications() {
+        guard !isFixture else { return }
         NotificationScheduler.reschedule(workspace: workspace, goLive: goLiveRemindersOn, payments: paymentRemindersOn)
     }
 }

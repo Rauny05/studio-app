@@ -70,7 +70,18 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild test -project RMStudio.xcodeproj -scheme RMStudio -destination "id=$UDID" \
+            -only-testing:RMStudioUITests/SignInUITests \
             -derivedDataPath build -resultBundlePath build/ui.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee test.log | grep -E "error:|Test Case|TEST|Executed" | head -60
+      - name: Fixture tour (screenshot every tab)
+        if: always()
+        working-directory: ios
+        run: |
+          mkdir -p shots
+          set -o pipefail
+          TEST_RUNNER_SCREENSHOT_DIR="$PWD/shots" xcodebuild test -project RMStudio.xcodeproj -scheme RMStudio \
+            -destination "id=$UDID" -only-testing:RMStudioUITests/FixtureTourUITests \
+            -derivedDataPath build -resultBundlePath build/tour.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee tour.log | grep -E "error:|Test Case|TEST|Executed" | head -40
+          ls shots | head -40
       - name: Launch signed-out app and screenshot
         if: always()
         working-directory: ios
@@ -86,6 +97,8 @@ jobs:
           name: simulator-results
           path: |
             ios/signin.png
+            ios/shots
+            ios/tour.log
             ios/build.log
             ios/test.log
             ios/build/ui.xcresult
