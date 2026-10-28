@@ -33,7 +33,12 @@ final class FixtureTourUITests: XCTestCase {
     }
 
     @discardableResult private func tap(_ element: XCUIElement, _ what: String, wait: TimeInterval = 4) -> Bool {
-        guard element.waitForExistence(timeout: wait) else { notes.append("MISSING: \(what)"); return false }
+        guard element.waitForExistence(timeout: wait) else {
+            let buttons = app.buttons.allElementsBoundByIndex.prefix(25).map { $0.label }.joined(separator: " | ")
+            let segments = app.segmentedControls.buttons.allElementsBoundByIndex.map { $0.label }.joined(separator: " | ")
+            notes.append("MISSING: \(what)\n   buttons: \(buttons)\n   segments: \(segments)")
+            return false
+        }
         // Coordinate tap avoids the flaky "scroll to visible" accessibility action on toolbar items.
         element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         usleep(400_000)

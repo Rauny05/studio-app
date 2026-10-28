@@ -175,7 +175,6 @@ struct DeliverableDetailView: View {
                                 .buttonStyle(.bordered).controlSize(.small)
                         }
                     }
-                    .accessibilityElement(children: .combine)
                 }
             }
             Section("Payment") {
