@@ -78,8 +78,9 @@ struct ContactDetailView: View {
                         if let p = c.phone, let u = URL(string: "tel:\(p.filter { $0.isNumber || $0 == "+" })") { Button { openURL(u) } label: { Label(p, systemImage: "phone") } }
                     }
                 }
+                let projects = model.workspace.deliverables.filter { row in c.rowIds.contains(row.id) }
                 Section("Projects") {
-                    ForEach(model.workspace.deliverables.filter { c.rowIds.contains($0.id) }) { r in
+                    ForEach(projects) { r in
                         Button { model.open(.production, .deliverable(r.id)) } label: {
                             HStack { Text(r.brand); Spacer(); StatusPill(text: r.overallStatus.title, tint: r.overallStatus.tint) }
                         }.foregroundStyle(RM.ink)
