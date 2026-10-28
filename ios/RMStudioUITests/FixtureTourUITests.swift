@@ -34,7 +34,7 @@ final class FixtureTourUITests: XCTestCase {
 
     @discardableResult private func tap(_ element: XCUIElement, _ what: String, wait: TimeInterval = 4) -> Bool {
         guard element.waitForExistence(timeout: wait) else {
-            let buttons = app.buttons.allElementsBoundByIndex.prefix(25).map { $0.label }.joined(separator: " | ")
+            let buttons = app.buttons.allElementsBoundByIndex.prefix(70).map { $0.label }.joined(separator: " | ")
             let segments = app.segmentedControls.buttons.allElementsBoundByIndex.map { $0.label }.joined(separator: " | ")
             notes.append("MISSING: \(what)\n   buttons: \(buttons)\n   segments: \(segments)")
             return false
@@ -54,66 +54,75 @@ final class FixtureTourUITests: XCTestCase {
         tap(app.segmentedControls.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", prefix)).firstMatch, "segment \(prefix)")
     }
 
-    func testTour() {
+    /// Fresh launch per section so one stuck sheet can't cascade into later screens.
+    private func relaunch() {
+        app.terminate()
+        app.launch()
         XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 15), "fixture workspace should skip sign-in")
         sleep(1)
+    }
+
+    func testTour() {
+        // Home + search + quick actions
+        relaunch()
         shot("01-home")
         app.swipeUp(); shot("02-home-scrolled"); app.swipeDown()
 
-        // Search
         if tap(app.buttons["Search workspace"], "search button") {
             let field = app.searchFields.firstMatch
             if field.waitForExistence(timeout: 4) { field.tap(); field.typeText("samsung"); sleep(1) }
             shot("03-search")
-            tap(app.buttons["Close"], "search close"); sleep(1)
         }
 
-        // Quick actions → new script form
+        relaunch()
         if tap(app.buttons["Quick actions"], "quick actions menu") {
-            shot("04-quick-actions")
-            tap(app.buttons["New script"], "menu: New script")
+            sleep(1); shot("04-quick-actions")
+            let item = app.buttons["New script"].firstMatch
+            if !tap(item, "menu: New script") { _ = tap(app.menuItems["New script"], "menuItem: New script") }
             sleep(1); shot("05-new-script-form")
-            tap(app.buttons["Cancel"], "form cancel")
         }
 
         // Production
+        relaunch()
         tab("Production"); sleep(1); shot("06-production-deliverables")
         if tap(app.staticTexts["Samsung Galaxy S26"], "row Samsung") {
             sleep(1); shot("07-deliverable-detail")
-            if tap(app.buttons["Complete"].firstMatch, "Complete button") {
+            if tap(app.buttons["Complete 2 IG reels"].exists ? app.buttons["Complete 2 IG reels"] : app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Complete'")).firstMatch, "Complete button") {
                 sleep(1); shot("08-completion-sheet")
                 if tap(app.buttons["Mark complete"], "Mark complete") { sleep(1); shot("09-completion-done") }
-                tap(app.buttons["Close"], "completion close")
             }
-            sleep(1); shot("10-detail-after-complete")
-            back()
         }
-        segment("Boards"); sleep(1); shot("11-boards")
-        if tap(app.staticTexts["Studio Content"], "board row") { sleep(1); shot("12-board-stage"); back() }
+        relaunch()
+        tab("Production"); segment("Boards"); sleep(1); shot("11-boards")
+        if tap(app.staticTexts["Studio Content"], "board row") { sleep(1); shot("12-board-stage") }
 
         // Scripts
+        relaunch()
         tab("Scripts"); sleep(1); shot("13-scripts-library")
         if tap(app.staticTexts["My full morning routine"], "script row") {
             sleep(1); shot("14-script-editor")
             let editor = app.textViews["Script text"]
-            if editor.waitForExistence(timeout: 4) { editor.tap(); editor.typeText(" Edited on device.") ; sleep(2); shot("15-script-editing") }
-            back()
+            if editor.waitForExistence(timeout: 4) { editor.tap(); editor.typeText(" Edited on device."); sleep(2); shot("15-script-editing") }
         }
-        segment("Inbox"); sleep(1); shot("16-scripts-inbox")
-        if tap(app.staticTexts["Samsung S26 launch reel scripts"], "inbox row") { sleep(1); shot("17-inbox-detail"); back() }
+        relaunch()
+        tab("Scripts"); segment("Inbox"); sleep(1); shot("16-scripts-inbox")
+        if tap(app.staticTexts["Samsung S26 launch reel scripts"], "inbox row") { sleep(1); shot("17-inbox-detail") }
 
         // Finance
+        relaunch()
         tab("Finance"); sleep(1); shot("18-finance-payments")
         segment("Cash"); sleep(1); shot("19-finance-cash")
 
         // More
+        relaunch()
         tab("More"); sleep(1); shot("20-more")
         if tap(app.buttons["Tasks"], "Tasks") { sleep(1); shot("21-tasks"); back() }
         if tap(app.buttons["Contacts"], "Contacts") {
             sleep(1); shot("22-contacts")
-            if tap(app.staticTexts["Priya Nair"], "contact row") { sleep(1); shot("23-contact-detail"); back() }
-            back()
+            if tap(app.staticTexts["Priya Nair"], "contact row") { sleep(1); shot("23-contact-detail") }
         }
+        relaunch()
+        tab("More")
         if tap(app.buttons["Settings & sync"], "Settings") { sleep(1); shot("24-settings") }
     }
 }
