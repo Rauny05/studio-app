@@ -5,7 +5,7 @@ import PackageDescription
 // business logic. No UIKit/SwiftUI so it can be unit-tested with `swift test`.
 let package = Package(
     name: "RMStudioKit",
-    platforms: [.iOS(.v18), .macOS(.v14)],
+    platforms: [.iOS("18.0"), .macOS("14.0")],
     products: [.library(name: "RMStudioKit", targets: ["RMStudioKit"])],
     targets: [
         .target(name: "RMStudioKit"),
