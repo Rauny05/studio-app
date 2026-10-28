@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authenticateRequest } from "@/lib/api-auth";
 import { dataGet, dataSet } from "@/lib/data-store";
 import { Reminder } from "../route";
 
 const KEY = "studio:reminders";
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") {
+  const user = await authenticateRequest(req);
+  if (user?.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const { id } = await params;

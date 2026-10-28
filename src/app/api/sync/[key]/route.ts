@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { dataGet, dataSet } from "@/lib/data-store";
 import { verifyMobileToken } from "@/lib/mobile-auth";
+import { isStaleWrite } from "@/lib/sync-version";
 import { notifyNewlyCompletedDeliverables } from "@/lib/activepieces-webhook";
 import type { DeliverableRow } from "@/app/api/deliverables/route";
 
@@ -69,6 +70,15 @@ export async function POST(
   try {
     const body = await req.json();
     const redisKey = `studio:sync:${key}`;
+
+    // Opt-in optimistic concurrency (native app). Web clients don't send the header.
+    const baseUpdatedAt = req.headers.get("x-base-updated-at");
+    if (baseUpdatedAt !== null) {
+      const current = await dataGet<SyncEnvelope>(redisKey);
+      if (isStaleWrite(baseUpdatedAt, current?.updatedAt)) {
+        return NextResponse.json({ error: "conflict", current }, { status: 409 });
+      }
+    }
 
     // Deliverable completions are registered here — capture prior state so we can
     // detect newly-completed items and notify Activepieces after the write succeeds.

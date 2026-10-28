@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getScripts, addScript } from "@/lib/scripts-store";
+import { authenticateRequest } from "@/lib/api-auth";
 import { randomUUID } from "crypto";
 import type { Script } from "@/lib/scripts-store";
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const user = await authenticateRequest(req);
   // Also allow internal calls with CRON_SECRET
   const authHeader = req.headers.get("Authorization");
   const isInternal = authHeader === `Bearer ${process.env.CRON_SECRET}`;
 
-  if (!session?.user?.email && !isInternal) {
+  if (!user && !isInternal) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authenticateRequest } from "@/lib/api-auth";
 import { dataGet, dataSet } from "@/lib/data-store";
 import { randomUUID } from "crypto";
 
@@ -17,14 +16,13 @@ export interface Reminder {
   createdAt: string;
 }
 
-async function requireAdmin() {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") return null;
-  return session;
+async function requireAdmin(req: NextRequest) {
+  const user = await authenticateRequest(req);
+  return user?.role === "admin" ? user : null;
 }
 
-export async function GET() {
-  if (!(await requireAdmin())) {
+export async function GET(req: NextRequest) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const reminders = (await dataGet<Reminder[]>(KEY)) ?? [];
@@ -32,7 +30,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await requireAdmin())) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const body = await req.json();

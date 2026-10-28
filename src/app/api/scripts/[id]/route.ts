@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { updateScript, updateScriptDoc, getScripts } from "@/lib/scripts-store";
+import { authenticateRequest } from "@/lib/api-auth";
 import { dataSet } from "@/lib/data-store";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email || session.user.role !== "admin") {
+  const user = await authenticateRequest(req);
+  if (!user || user.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
@@ -20,12 +19,12 @@ export async function PATCH(
     }
     let updated;
     if (body.docId) {
-      updated = await updateScriptDoc(id, body.docId, body.status, session.user.email);
+      updated = await updateScriptDoc(id, body.docId, body.status, user.email);
     } else {
       updated = await updateScript(id, {
         status: body.status,
         approved_at: body.status === "approved" ? new Date().toISOString() : null,
-        approved_by: body.status === "approved" ? session.user.email : null,
+        approved_by: body.status === "approved" ? user.email : null,
       });
     }
     if (!updated) return NextResponse.json({ error: "Script not found" }, { status: 404 });
@@ -37,11 +36,11 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email || session.user.role !== "admin") {
+  const user = await authenticateRequest(req);
+  if (!user || user.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
