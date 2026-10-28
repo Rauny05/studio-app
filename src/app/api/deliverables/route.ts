@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseGoLiveDate } from "@/lib/go-live-date";
+import { parseMonth } from "@/lib/pn-month";
 
 const SHEET_ID = "1PImkkw3DEsbZ8Vaveqmc-nyPkP_xQhoAGfesPeE1_fY";
 const SHEET_GID = "1182035153"; // "copy of 2025 Apr Onwards" — DO NOT touch master sheet
@@ -87,22 +88,6 @@ export interface DeliverableRow {
   month: string;
   goLiveDate?: string;       // YYYY-MM-DD
   activityLog?: ActivityEntry[];
-}
-
-const MONTH_MAP: Record<string, string> = {
-  ja: "Jan", fe: "Feb", ma: "Mar", ap: "Apr",
-  my: "May", ju: "Jun", jl: "Jul", au: "Aug",
-  se: "Sep", oc: "Oct", no: "Nov", de: "Dec",
-};
-
-function parseMonth(pnNo: string): string {
-  // Handles: ap25-1, apr25-1, ap2025-1, APR25-001, etc.
-  const match = pnNo.match(/^([a-z]{2,4})(\d{2,4})-/i);
-  if (!match) return "";
-  const prefix = match[1].slice(0, 2).toLowerCase();
-  const yearRaw = match[2];
-  const year = yearRaw.length === 2 ? `20${yearRaw}` : yearRaw;
-  return `${MONTH_MAP[prefix] ?? match[1]} ${year}`;
 }
 
 function parseDeliverables(raw: string): DeliverableItem[] {
