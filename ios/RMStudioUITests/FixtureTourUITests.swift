@@ -89,12 +89,14 @@ final class FixtureTourUITests: XCTestCase {
             sleep(1); shot("07-deliverable-detail")
             if tap(app.buttons["Complete 2 IG reels"].exists ? app.buttons["Complete 2 IG reels"] : app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Complete'")).firstMatch, "Complete button") {
                 sleep(1); shot("08-completion-sheet")
+                // Reel items start at the "live link" step; draft the email first.
+                if app.buttons["Draft completion email"].waitForExistence(timeout: 2) { tap(app.buttons["Draft completion email"], "Draft completion email"); sleep(1); shot("08b-completion-email-draft") }
                 if tap(app.buttons["Mark complete"], "Mark complete") { sleep(1); shot("09-completion-done") }
             }
         }
         relaunch()
         tab("Production"); segment("Boards"); sleep(1); shot("11-boards")
-        if tap(app.staticTexts["Studio Content"], "board row") { sleep(1); shot("12-board-stage") }
+        if tap(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Studio Content'")).firstMatch, "board row") { sleep(1); shot("12-board-stage") }
 
         // Scripts
         relaunch()
