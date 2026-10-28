@@ -9,7 +9,7 @@ final class FixtureTourUITests: XCTestCase {
     private var dir: URL?
 
     override func setUp() {
-        continueAfterFailure = false
+        continueAfterFailure = true
         app = XCUIApplication()
         app.launchArguments = ["-ui-testing-fixture"]
         app.launch()
@@ -34,11 +34,16 @@ final class FixtureTourUITests: XCTestCase {
 
     @discardableResult private func tap(_ element: XCUIElement, _ what: String, wait: TimeInterval = 4) -> Bool {
         guard element.waitForExistence(timeout: wait) else { notes.append("MISSING: \(what)"); return false }
-        element.tap()
+        // Coordinate tap avoids the flaky "scroll to visible" accessibility action on toolbar items.
+        element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        usleep(400_000)
         return true
     }
 
-    private func back() { app.navigationBars.buttons.element(boundBy: 0).tap() }
+    private func back() {
+        app.navigationBars.buttons.element(boundBy: 0).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        usleep(500_000)
+    }
     private func tab(_ name: String) { tap(app.tabBars.buttons[name], "tab \(name)") }
     private func segment(_ prefix: String) {
         tap(app.segmentedControls.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", prefix)).firstMatch, "segment \(prefix)")
@@ -55,7 +60,7 @@ final class FixtureTourUITests: XCTestCase {
             let field = app.searchFields.firstMatch
             if field.waitForExistence(timeout: 4) { field.tap(); field.typeText("samsung"); sleep(1) }
             shot("03-search")
-            tap(app.buttons["Close"], "search close")
+            tap(app.buttons["Close"], "search close"); sleep(1)
         }
 
         // Quick actions → new script form
