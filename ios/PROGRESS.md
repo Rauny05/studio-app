@@ -26,7 +26,7 @@ Completion automation: web writes the full `deliverable-overrides` map to `/api/
 - **Backend stays the source of truth**; no new database. Scripts = production cards' `description`; Inbox = `/api/scripts`.
 - **Generic ops, not whole-blob writes.** The app records intents (`PendingOp`), applies them optimistically, persists them, then replays them against the *latest* server blob using `X-Base-Updated-At` optimistic concurrency (409 → re-read, re-apply, max 3). Unknown JSON fields are preserved (`JSONValue`), so web-added fields survive iOS writes.
 - Script edit conflicts: op carries the text it was based on; if the server text differs, nothing is overwritten and the user picks mine/theirs.
-- Persistence: JSON files in Application Support (`DiskStore`; excluded from backup, `completeFileUnlessOpen`) instead of SwiftData — simpler to keep byte-compatible with the web blobs. Token in Keychain.
+- Persistence: JSON files in Application Support (`DiskStore`; excluded from backup, `completeFileProtectionUnlessOpen`) instead of SwiftData — simpler to keep byte-compatible with the web blobs. Token in Keychain.
 
 ## Backend changes (all backward compatible)
 

@@ -34,7 +34,7 @@ public struct DiskStore: Sendable {
         encoder.dateEncodingStrategy = .iso8601
         guard let data = try? encoder.encode(value) else { return }
         #if os(iOS)
-        let options: Data.WritingOptions = [.atomic, .completeFileUnlessOpen]
+        let options: Data.WritingOptions = [.atomic, .completeFileProtectionUnlessOpen]
         #else
         let options: Data.WritingOptions = [.atomic]
         #endif
