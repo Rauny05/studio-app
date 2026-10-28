@@ -81,8 +81,13 @@ jobs:
           TEST_RUNNER_SCREENSHOT_DIR="$PWD/shots" xcodebuild test -project RMStudio.xcodeproj -scheme RMStudio \
             -destination "id=$UDID" -only-testing:RMStudioUITests/FixtureTourUITests \
             -derivedDataPath build -resultBundlePath build/tour.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee tour.log | grep -E "error:|Test Case|TEST|Executed" | head -40
+      - name: Tour notes
+        if: always()
+        working-directory: ios
+        run: |
           ls shots | head -60
           echo "--- notes.txt ---"; cat shots/notes.txt || true
+          grep -E "error:|Failed" tour.log | head -20 || true
       - name: Launch signed-out app and screenshot
         if: always()
         working-directory: ios
