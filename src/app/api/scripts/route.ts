@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { getScripts, addScript } from "@/lib/scripts-store";
 import { randomUUID } from "crypto";
 import type { Script } from "@/lib/scripts-store";
