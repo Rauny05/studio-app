@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 /** Returns the signed-in email or a 401 response. Every /api/cc handler goes through this. */
 export async function requireUser(): Promise<{ email: string } | NextResponse> {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SignJWT } from "jose";
 import { loadUsers } from "@/lib/users-store";
-import { ADMIN_EMAIL } from "@/app/api/auth/[...nextauth]/route";
+import { ADMIN_EMAIL } from "@/lib/auth";
 
 const SECRET = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET ?? "fallback-secret-change-me"

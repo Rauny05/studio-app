@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
-import type { AllowedUser } from "@/app/api/auth/[...nextauth]/route";
+import type { AllowedUser } from "@/lib/auth";
 
 const ALL_PERMISSIONS = ["dashboard", "projects", "deliverables", "calendar", "settings", "todos"];
 
