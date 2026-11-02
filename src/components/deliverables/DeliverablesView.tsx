@@ -76,7 +76,7 @@ const STATUS_CONFIG = {
 const PAYMENT_STEPS = ["Email", "50%", "Paid"];
 
 // Hardcoded agency chips — order is display order
-const TBTS_NEON = "#ff2bd6";
+const TBTS_PASTEL = "#b8a9ff";
 const TBTS_RE = /\bTBTS\b/i;
 function mentionsTbts(row: DeliverableRow): boolean {
   return [row.pnNo, row.brand, row.poc, row.note, row.invoiceNumber, ...row.deliverables.map((d) => d.label)]
@@ -1160,7 +1160,7 @@ function DeliverableCard({
       data-tbts={isTbts || undefined}
       onClick={onClick}
       style={isTbts
-        ? { cursor: "pointer", borderColor: TBTS_NEON, boxShadow: `0 0 0 1px ${TBTS_NEON}, 0 0 18px ${TBTS_NEON}66, inset 0 0 22px ${TBTS_NEON}1f` }
+        ? { cursor: "pointer", borderColor: `${TBTS_PASTEL}99`, background: `linear-gradient(180deg, ${TBTS_PASTEL}1f, ${TBTS_PASTEL}0a)`, boxShadow: `0 0 0 1px ${TBTS_PASTEL}55, 0 6px 22px ${TBTS_PASTEL}26` }
         : { cursor: "pointer" }}
       role="button"
       tabIndex={0}
@@ -1174,6 +1174,18 @@ function DeliverableCard({
             <Highlight text={row.pnNo.toUpperCase()} query={search} />
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            {isTbts && (
+              <span
+                title="TBTS"
+                style={{
+                  fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", lineHeight: 1,
+                  padding: "5px 10px", borderRadius: 999,
+                  color: "#2a2250", background: TBTS_PASTEL,
+                }}
+              >
+                TBTS
+              </span>
+            )}
             {isLocal && <span className="dl-local-badge" title="Locally created card">Local</span>}
             {modified && !isLocal && <span className="dl-modified-dot" title="Locally modified" />}
             {hasCollab && (
