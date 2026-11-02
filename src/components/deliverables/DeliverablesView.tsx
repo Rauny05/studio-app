@@ -76,6 +76,13 @@ const STATUS_CONFIG = {
 const PAYMENT_STEPS = ["Email", "50%", "Paid"];
 
 // Hardcoded agency chips — order is display order
+const TBTS_NEON = "#ff2bd6";
+const TBTS_RE = /\bTBTS\b/i;
+function mentionsTbts(row: DeliverableRow): boolean {
+  return [row.pnNo, row.brand, row.poc, row.note, row.invoiceNumber, ...row.deliverables.map((d) => d.label)]
+    .some((t) => !!t && TBTS_RE.test(t));
+}
+
 const AGENCY_CHIPS = ["LWT", "Momentum", "Jonathan/Pianosa", "Sociowash", "Socialcurrent"];
 
 // Match a row against an agency chip label — checks pocName AND pocCompany,
@@ -1143,13 +1150,18 @@ function DeliverableCard({
     });
   }
 
+  const isTbts = mentionsTbts(row);
+
   return (
     <div
       className="dl-card"
       data-status={row.overallStatus}
       data-completed={completed}
+      data-tbts={isTbts || undefined}
       onClick={onClick}
-      style={{ cursor: "pointer" }}
+      style={isTbts
+        ? { cursor: "pointer", borderColor: TBTS_NEON, boxShadow: `0 0 0 1px ${TBTS_NEON}, 0 0 18px ${TBTS_NEON}66, inset 0 0 22px ${TBTS_NEON}1f` }
+        : { cursor: "pointer" }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick(); }}
