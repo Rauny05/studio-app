@@ -75,14 +75,34 @@ const STATUS_CONFIG = {
 
 const PAYMENT_STEPS = ["Email", "50%", "Paid"];
 
-// Hardcoded agency chips — order is display order
 const TBTS_PASTEL = "#b8a9ff";
-const TBTS_RE = /\bTBTS\b/i;
-function mentionsTbts(row: DeliverableRow): boolean {
+const COLLAB_PASTEL = "#f4b8a6";
+
+function rowTexts(row: DeliverableRow): string[] {
   return [row.pnNo, row.brand, row.poc, row.note, row.invoiceNumber, ...row.deliverables.map((d) => d.label)]
-    .some((t) => !!t && TBTS_RE.test(t));
+    .filter((t): t is string => !!t);
+}
+function mentionsTbts(row: DeliverableRow): boolean {
+  return rowTexts(row).some((t) => /\bTBTS\b/i.test(t));
+}
+function mentionsCollab(row: DeliverableRow): boolean {
+  return rowTexts(row).some((t) => /collab/i.test(t));
+}
+function pastelCardStyle(color: string) {
+  return { borderColor: `${color}99`, background: `linear-gradient(180deg, ${color}1f, ${color}0a)`, boxShadow: `0 0 0 1px ${color}55, 0 6px 22px ${color}26` };
+}
+function PastelTag({ label, color, text }: { label: string; color: string; text: string }) {
+  return (
+    <span
+      title={label}
+      style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", lineHeight: 1, padding: "5px 10px", borderRadius: 999, color: text, background: color }}
+    >
+      {label}
+    </span>
+  );
 }
 
+// Hardcoded agency chips — order is display order
 const AGENCY_CHIPS = ["LWT", "Momentum", "Jonathan/Pianosa", "Sociowash", "Socialcurrent"];
 
 // Match a row against an agency chip label — checks pocName AND pocCompany,
@@ -1119,7 +1139,6 @@ function DeliverableCard({
   onClick: () => void;
 }) {
   const status = STATUS_CONFIG[row.overallStatus];
-  const hasCollab = row.deliverables.some((d) => /collab/i.test(d.label));
   const lsKey = `dl-adv-rcvd-${row.id}`;
   const completedKey = `dl-completed-${row.id}`;
   const [advRcvd, setAdvRcvd] = useState<boolean>(() => {
@@ -1151,6 +1170,7 @@ function DeliverableCard({
   }
 
   const isTbts = mentionsTbts(row);
+  const hasCollab = mentionsCollab(row);
 
   return (
     <div
@@ -1158,10 +1178,12 @@ function DeliverableCard({
       data-status={row.overallStatus}
       data-completed={completed}
       data-tbts={isTbts || undefined}
+      data-collab={hasCollab || undefined}
       onClick={onClick}
-      style={isTbts
-        ? { cursor: "pointer", borderColor: `${TBTS_PASTEL}99`, background: `linear-gradient(180deg, ${TBTS_PASTEL}1f, ${TBTS_PASTEL}0a)`, boxShadow: `0 0 0 1px ${TBTS_PASTEL}55, 0 6px 22px ${TBTS_PASTEL}26` }
-        : { cursor: "pointer" }}
+      style={{
+        cursor: "pointer",
+        ...(isTbts ? pastelCardStyle(TBTS_PASTEL) : hasCollab ? pastelCardStyle(COLLAB_PASTEL) : {}),
+      }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick(); }}
@@ -1174,31 +1196,10 @@ function DeliverableCard({
             <Highlight text={row.pnNo.toUpperCase()} query={search} />
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            {isTbts && (
-              <span
-                title="TBTS"
-                style={{
-                  fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", lineHeight: 1,
-                  padding: "5px 10px", borderRadius: 999,
-                  color: "#2a2250", background: TBTS_PASTEL,
-                }}
-              >
-                TBTS
-              </span>
-            )}
+            {isTbts && <PastelTag label="TBTS" color={TBTS_PASTEL} text="#2a2250" />}
             {isLocal && <span className="dl-local-badge" title="Locally created card">Local</span>}
             {modified && !isLocal && <span className="dl-modified-dot" title="Locally modified" />}
-            {hasCollab && (
-              <span className="dl-collab-tag">
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                Collab
-              </span>
-            )}
+            {hasCollab && <PastelTag label="COLLAB" color={COLLAB_PASTEL} text="#4a2418" />}
             <span className="dl-status-pill" data-status={row.overallStatus}>
               {status.label}
             </span>
@@ -1472,7 +1473,7 @@ export function DeliverablesView() {
   }, [displayData]);
 
   const collabCount = useMemo(() =>
-    displayData.filter((r) => r.deliverables.some((d) => /collab/i.test(d.label))).length,
+    displayData.filter(mentionsCollab).length,
     [displayData]
   );
 
@@ -1490,7 +1491,7 @@ export function DeliverablesView() {
       if (month !== "all" && row.month !== month) return false;
       if (talent !== "all" && row.pocName !== talent) return false;
       if (agencyFilter && !matchesAgency(row, agencyFilter)) return false;
-      if (collabOnly && !row.deliverables.some((d) => /collab/i.test(d.label))) return false;
+      if (collabOnly && !mentionsCollab(row)) return false;
       if (q) return (
         row.brand.toLowerCase().includes(q) ||
         row.pnNo.toLowerCase().includes(q) ||
