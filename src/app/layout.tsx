@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   other: {
     "mobile-web-app-capable": "yes",
-    "msapplication-TileColor": "#6c28d9",
+    "msapplication-TileColor": "#0e0e10",
     "msapplication-tap-highlight": "no",
   },
 };
@@ -41,8 +41,8 @@ export const viewport: Viewport = {
   userScalable: false,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#6c28d9" },
-    { media: "(prefers-color-scheme: light)", color: "#6c28d9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0e10" },
+    { media: "(prefers-color-scheme: light)", color: "#0e0e10" },
   ],
 };
 
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="RM Studio" />
-        <meta name="theme-color" content="#6c28d9" />
+        <meta name="theme-color" content="#0e0e10" />
       </head>
       <body>
         <Providers>{children}</Providers>

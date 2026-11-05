@@ -563,7 +563,7 @@ export function CalendarView() {
                   {/* Go-live date chips from deliverables sheet */}
                   {(goLiveMap[dateStr] ?? []).map((gl, gi) => (
                     <div key={`gl-${gi}`} className="calendar-golive-chip" title={`Go live: ${gl.brand}`}>
-                      🚀 <span>{gl.brand}</span>
+                      <span>{gl.brand}</span>
                     </div>
                   ))}
                 </div>

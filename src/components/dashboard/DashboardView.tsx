@@ -208,7 +208,7 @@ function DeliverablesSummary() {
           <h3 className="dl-dash-title">Deliverables</h3>
           {!loading && <span className="dl-dash-total">{total} total</span>}
         </div>
-        <Link href="/deliverables" className="dashboard-panel-link">View all →</Link>
+        <Link href="/deliverables" className="dashboard-panel-link">View all</Link>
       </div>
 
       {loading ? (
@@ -338,7 +338,7 @@ function GoLiveDates() {
         <div className="golive-card-date">
           <span className="golive-card-day">{dayLabel}</span>
           <span className="golive-card-num">{dateLabel}</span>
-          {!isToday && !isTomorrow && daysLeft > 0 && <span className="golive-card-countdown">in {daysLeft}d</span>}
+          {!isToday && !isTomorrow && daysLeft > 0 && <span className="golive-card-countdown">T−{String(daysLeft).padStart(2, "0")}d</span>}
         </div>
         <div className="golive-card-body">
           <span className="golive-card-brand golive-card-brand-hero">{e.brand}</span>
@@ -358,13 +358,12 @@ function GoLiveDates() {
     <div className="golive-widget">
       <div className="golive-header">
         <div className="golive-title-row">
-          <span className="golive-icon">📅</span>
           <div>
             <h2 className="golive-title">Go Live Dates</h2>
             <p className="golive-sub">{loading ? "Loading…" : `${upcoming.length} upcoming`}</p>
           </div>
         </div>
-        <a href="/deliverables" className="dashboard-panel-link">Manage →</a>
+        <a href="/deliverables" className="dashboard-panel-link">Manage</a>
       </div>
 
       {loading ? (
@@ -553,7 +552,6 @@ function TodayReels() {
     <div className="today-reels-widget">
       <div className="today-reels-header">
         <div className="today-reels-title-row">
-          <span className="today-reels-icon">🎬</span>
           <div>
             <h2 className="today-reels-title">Reel Schedule</h2>
             <p className="today-reels-date">Next 3 days</p>
@@ -594,14 +592,14 @@ function ReelTimeline() {
   return (
     <div className="reel-timeline-card">
       <div className="reel-timeline-header">
-        <span>🎬 Reel Timeline</span>
-        <a href="/calendar" className="dashboard-panel-link">Manage →</a>
+        <span>Reel timeline</span>
+        <a href="/calendar" className="dashboard-panel-link">Manage</a>
       </div>
       <div className="reel-timeline-body">
         {days.length === 0 ? (
           <div className="reel-timeline-empty">
             No upcoming reels scheduled.{" "}
-            <a href="/calendar" className="dashboard-panel-link">Plan on calendar →</a>
+            <a href="/calendar" className="dashboard-panel-link">Plan on calendar</a>
           </div>
         ) : (
           days.map(({ dateStr, label, reels }) => (
@@ -847,11 +845,10 @@ function PriorityVideos() {
         {/* Header */}
         <div className="pv-header">
           <div className="pv-header-left">
-            <span className="pv-header-icon">🎯</span>
             <div>
               <h3 className="pv-heading">Priority Videos</h3>
               <p className="pv-subheading">
-                {!hydrated ? "Loading…" : totalActive === 0 ? "All clear — nothing queued" : `${totalActive} queued · ${byPriority.done.length} done`}
+                {!hydrated ? "Loading…" : totalActive === 0 ? "Nothing queued" : `${totalActive} queued · ${byPriority.done.length} done`}
               </p>
             </div>
           </div>
@@ -1198,7 +1195,7 @@ export function DashboardView() {
           </div>
           {upcoming.length === 0 ? (
             <div className="dashboard-panel-empty">
-              <span>🎉</span> Nothing due in the next 7 days
+              Nothing due in the next 7 days
             </div>
           ) : (
             <div className="recent-cards-list">
@@ -1230,7 +1227,7 @@ export function DashboardView() {
           </div>
           {recentCards.length === 0 ? (
             <div className="dashboard-panel-empty">
-              <span>📝</span> No cards yet. <Link href="/projects" className="dashboard-panel-link">Create a project</Link>
+              No cards yet. <Link href="/projects" className="dashboard-panel-link">Create a project</Link>
             </div>
           ) : (
             <div className="recent-cards-list">
