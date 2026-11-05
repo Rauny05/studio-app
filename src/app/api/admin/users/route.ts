@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions, ADMIN_EMAIL, ALL_PERMISSIONS } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions, ADMIN_EMAIL, ALL_PERMISSIONS } from "@/lib/auth";
 import { loadUsers, saveUsers } from "@/lib/users-store";
 import type { AllowedUser } from "@/lib/users-store";
 

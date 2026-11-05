@@ -23,6 +23,20 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
   // Only true inside the Capacitor Android app — never on web browser
   const [isNativeApp, setIsNativeApp] = useState(false);
+  // Hosted inside the RM Studio Command Center shell (same-origin frame at /studio/...): that shell
+  // already provides navigation, so this one drops its own chrome. Standalone use is unchanged.
+  const [embedded, setEmbedded] = useState(false);
+  useEffect(() => {
+    let framed = false;
+    try { framed = window.self !== window.top && window.top?.location.origin === window.location.origin; } catch { framed = false; }
+    setEmbedded(framed);
+    // Opened directly in a browser tab: move into the single RM Studio shell instead of running a second UI.
+    // The Capacitor Android wrapper keeps its own native shell.
+    if (!framed && !detectNativeApp()) {
+      const { pathname, search } = window.location;
+      window.location.replace(pathname === "/dashboard" ? "/home" : `/studio${pathname}${search}`);
+    }
+  }, []);
   useVaultSync();
   usePushNotifications();
 
@@ -40,6 +54,17 @@ function Shell({ children }: { children: React.ReactNode }) {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [isNativeApp, setSidebarCollapsed]);
+
+  if (embedded) {
+    return (
+      <div className="app-shell" data-embedded="true" style={{ display: "block", minHeight: "100vh" }}>
+        <main className="app-content">{children}</main>
+        <QuickAdd />
+        <CommandPalette />
+        <CloudSync />
+      </div>
+    );
+  }
 
   return (
     <div

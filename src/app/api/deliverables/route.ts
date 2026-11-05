@@ -124,7 +124,7 @@ function computeOverallStatus(
 export async function GET(req: import("next/server").NextRequest) {
   // Accept both NextAuth session and mobile JWT
   const { getServerSession } = await import("next-auth");
-  const { authOptions } = await import("@/app/api/auth/[...nextauth]/route");
+  const { authOptions } = await import("@/lib/auth");
   const { verifyMobileToken } = await import("@/lib/mobile-auth");
 
   const session = await getServerSession(authOptions);
