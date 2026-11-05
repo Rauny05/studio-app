@@ -9621,6 +9621,22 @@ body { font-variant-numeric: tabular-nums; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
-/* TBTS cards: quiet amber hairline instead of a neon glow */
-.dl-card[data-tbts="true"] { border-color: color-mix(in srgb, var(--app-purple) 55%, var(--app-border)); }
+/* TBTS and Collab: identity tags plus a quiet tinted hairline on the card */
+.dl-tag {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.dl-tag-tbts   { color: #cfc6ff; background: rgba(184, 169, 255, 0.16); }
+.dl-tag-collab { color: #f6c4b4; background: rgba(244, 184, 166, 0.16); }
+html[data-theme="light"] .dl-tag-tbts   { color: #4a3a9c; background: rgba(120, 100, 220, 0.12); }
+html[data-theme="light"] .dl-tag-collab { color: #9a4126; background: rgba(220, 120, 90, 0.14); }
+.dl-card[data-collab="true"] { border-color: rgba(244, 184, 166, 0.45); }
+.dl-card[data-tbts="true"]   { border-color: rgba(184, 169, 255, 0.5); }
+html[data-theme="light"] .dl-card[data-collab="true"] { border-color: rgba(220, 120, 90, 0.45); }
+html[data-theme="light"] .dl-card[data-tbts="true"]   { border-color: rgba(120, 100, 220, 0.45); }
 

@@ -75,9 +75,6 @@ const STATUS_CONFIG = {
 
 const PAYMENT_STEPS = ["Email", "50%", "Paid"];
 
-const TBTS_PASTEL = "#b8a9ff";
-const COLLAB_PASTEL = "#f4b8a6";
-
 function rowTexts(row: DeliverableRow): string[] {
   return [row.pnNo, row.brand, row.poc, row.note, row.invoiceNumber, ...row.deliverables.map((d) => d.label)]
     .filter((t): t is string => !!t);
@@ -88,18 +85,8 @@ function mentionsTbts(row: DeliverableRow): boolean {
 function mentionsCollab(row: DeliverableRow): boolean {
   return rowTexts(row).some((t) => /collab/i.test(t));
 }
-function pastelCardStyle(color: string) {
-  return { borderColor: `${color}99`, background: `linear-gradient(180deg, ${color}1f, ${color}0a)`, boxShadow: `0 0 0 1px ${color}55, 0 6px 22px ${color}26` };
-}
-function PastelTag({ label, color, text }: { label: string; color: string; text: string }) {
-  return (
-    <span
-      title={label}
-      style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", lineHeight: 1, padding: "5px 10px", borderRadius: 999, color: text, background: color }}
-    >
-      {label}
-    </span>
-  );
+function Tag({ label, kind }: { label: string; kind: "tbts" | "collab" }) {
+  return <span className={`dl-tag dl-tag-${kind}`} title={label}>{label}</span>;
 }
 
 // Hardcoded agency chips — order is display order
@@ -1180,10 +1167,7 @@ function DeliverableCard({
       data-tbts={isTbts || undefined}
       data-collab={hasCollab || undefined}
       onClick={onClick}
-      style={{
-        cursor: "pointer",
-        ...(isTbts ? pastelCardStyle(TBTS_PASTEL) : hasCollab ? pastelCardStyle(COLLAB_PASTEL) : {}),
-      }}
+      style={{ cursor: "pointer" }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick(); }}
@@ -1196,10 +1180,10 @@ function DeliverableCard({
             <Highlight text={row.pnNo.toUpperCase()} query={search} />
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            {isTbts && <PastelTag label="TBTS" color={TBTS_PASTEL} text="#2a2250" />}
+            {isTbts && <Tag label="TBTS" kind="tbts" />}
             {isLocal && <span className="dl-local-badge" title="Locally created card">Local</span>}
             {modified && !isLocal && <span className="dl-modified-dot" title="Locally modified" />}
-            {hasCollab && <PastelTag label="COLLAB" color={COLLAB_PASTEL} text="#4a2418" />}
+            {hasCollab && <Tag label="COLLAB" kind="collab" />}
             <span className="dl-status-pill" data-status={row.overallStatus}>
               {status.label}
             </span>
