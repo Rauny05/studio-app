@@ -7,6 +7,9 @@ import { Suspense, useState } from "react";
 function SignInContent() {
   const params = useSearchParams();
   const error = params.get("error");
+  // Return to the page that sent us here; only same-origin paths, so this can't become an open redirect.
+  const requested = params.get("callbackUrl") ?? "";
+  const callbackUrl = requested.startsWith("/") && !requested.startsWith("//") ? requested : "/home";
 
   // Detect Capacitor / Android WebView — skip Google OAuth entirely
   const [mode, setMode] = useState<"google" | "admin">("google");
@@ -22,7 +25,7 @@ function SignInContent() {
     const result = await signIn("passcode", {
       email,
       passcode,
-      callbackUrl: "/dashboard",
+      callbackUrl,
       redirect: false,
     });
     setLoading(false);
@@ -54,7 +57,7 @@ function SignInContent() {
           <div className="auth-passcode-form">
             <button
               type="button"
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => signIn("google", { callbackUrl })}
               className="auth-passcode-btn"
             >
               Sign in with Google

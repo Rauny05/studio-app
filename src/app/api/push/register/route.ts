@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 const REDIS_URL = () => process.env.UPSTASH_REDIS_REST_URL!;
 const REDIS_TOKEN = () => process.env.UPSTASH_REDIS_REST_TOKEN!;

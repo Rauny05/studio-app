@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth";
-import { authOptions, ADMIN_EMAIL } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions, ADMIN_EMAIL } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { UserManagement } from "@/components/admin/UserManagement";
 

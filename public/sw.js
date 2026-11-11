@@ -6,6 +6,10 @@ const STATIC_CACHE  = `rm-static-${CACHE_VERSION}`;
 const PAGE_CACHE    = `rm-pages-${CACHE_VERSION}`;
 const IMAGE_CACHE   = `rm-images-${CACHE_VERSION}`;
 
+// Dev servers reuse chunk filenames across edits, so cache-first serves stale CSS/JS.
+// On localhost the worker stays out of the way and clears anything it cached before.
+const DEV = ["localhost", "127.0.0.1", "[::1]"].includes(self.location.hostname);
+
 const PRECACHE_PAGES = [
   "/",
   "/dashboard",
@@ -20,6 +24,7 @@ const PRECACHE_PAGES = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
+      if (DEV) return;
       const cache = await caches.open(PAGE_CACHE);
       // Precache pages best-effort (don't fail install if one 404s)
       await Promise.allSettled(PRECACHE_PAGES.map((url) => cache.add(url)));
@@ -34,7 +39,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => !keep.has(k)).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => DEV || !keep.has(k)).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -42,7 +47,7 @@ self.addEventListener("activate", (event) => {
 // ── Fetch strategy ────────────────────────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-  if (req.method !== "GET") return;
+  if (DEV || req.method !== "GET") return;
 
   const url = new URL(req.url);
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { dataGet, dataSet } from "@/lib/data-store";
 import { verifyMobileToken } from "@/lib/mobile-auth";
 import { notifyNewlyCompletedDeliverables } from "@/lib/activepieces-webhook";

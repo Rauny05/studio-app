@@ -12,6 +12,8 @@ const ROUTE_PERMISSIONS: Record<string, string> = {
   "/todos":        "todos",
 };
 
+// Command Center pages (below in matcher): any signed-in user; /api/cc routes enforce their own session check
+
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
@@ -58,6 +60,8 @@ export default withAuth(
 
 export const config = {
   matcher: [
+    "/workspace/:path*",
+    "/studio/:path*",
     "/dashboard/:path*",
     "/projects/:path*",
     "/scripts/:path*",
@@ -66,5 +70,16 @@ export const config = {
     "/settings/:path*",
     "/admin/:path*",
     "/todos/:path*",
+    "/home/:path*",
+    "/my-day/:path*",
+    "/tasks/:path*",
+    "/to-shoot/:path*",
+    "/inbox/:path*",
+    "/agenda/:path*",
+    "/operations/:path*",
+    "/apps/:path*",
+    "/studio-ai/:path*",
+    "/health/:path*",
+    "/integrations/:path*",
   ],
 };

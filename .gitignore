@@ -46,3 +46,6 @@ android/build/
 *.aab.claude/worktrees/
 buttercut
 doc-converter
+.cc-data/
+
+e2e-results/
