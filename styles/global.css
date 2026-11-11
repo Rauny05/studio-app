@@ -9710,32 +9710,32 @@ html[data-theme="light"] .dl-card[data-tbts="true"]   { border-color: rgba(120, 
   --v2-text: #18181b;
   --v2-text2: #52525b;
   --v2-text3: #71717a;
-  --v2-accent: #7656c4;
+  --v2-accent: #7c4dff;
   --v2-accent-fg: #ffffff;
-  --v2-amber: #a86a12;
-  --v2-blue: #2f63c2;
-  --v2-green: #1f8a52;
-  --v2-red: #c23b42;
+  --v2-amber: #c27c00;
+  --v2-blue: #2563eb;
+  --v2-green: #059b5a;
+  --v2-red: #e11d48;
   --v2-tint: 0.1;
   --v2-shadow: 0 1px 2px rgba(16, 16, 20, 0.04), 0 4px 14px rgba(16, 16, 20, 0.05);
 }
 html[data-theme="dark"] .dl-v2 {
-  --v2-bg: #101014; --v2-bg2: #15151b; --v2-card: #1c1c23; --v2-elev: #24242d;
-  --v2-border: #2a2a36; --v2-border-strong: #3a3a49;
-  --v2-text: #f4f4f5; --v2-text2: #a1a1aa; --v2-text3: #8b8b94;
-  --v2-accent: #9475d5; --v2-accent-fg: #ffffff;
-  --v2-amber: #e0b05a; --v2-blue: #7ea6ec; --v2-green: #6cc795; --v2-red: #ec7d82;
-  --v2-tint: 0.13;
+  --v2-bg: #0d0e14; --v2-bg2: #12131b; --v2-card: #171822; --v2-elev: #20212e;
+    --v2-border: #272939; --v2-border-strong: #383b52;
+    --v2-text: #f6f6f8; --v2-text2: #b4b4c2; --v2-text3: #8a8a9c;
+    --v2-accent: #8b5cf6; --v2-accent-fg: #ffffff;
+    --v2-amber: #fbbf24; --v2-blue: #4f8cff; --v2-green: #22d47e; --v2-red: #ff4d5e;
+    --v2-tint: 0.16;
   --v2-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 @media (prefers-color-scheme: dark) {
   html:not([data-theme="light"]) .dl-v2 {
-    --v2-bg: #101014; --v2-bg2: #15151b; --v2-card: #1c1c23; --v2-elev: #24242d;
-    --v2-border: #2a2a36; --v2-border-strong: #3a3a49;
-    --v2-text: #f4f4f5; --v2-text2: #a1a1aa; --v2-text3: #8b8b94;
-    --v2-accent: #9475d5; --v2-accent-fg: #ffffff;
-    --v2-amber: #e0b05a; --v2-blue: #7ea6ec; --v2-green: #6cc795; --v2-red: #ec7d82;
-    --v2-tint: 0.13;
+    --v2-bg: #0d0e14; --v2-bg2: #12131b; --v2-card: #171822; --v2-elev: #20212e;
+    --v2-border: #272939; --v2-border-strong: #383b52;
+    --v2-text: #f6f6f8; --v2-text2: #b4b4c2; --v2-text3: #8a8a9c;
+    --v2-accent: #8b5cf6; --v2-accent-fg: #ffffff;
+    --v2-amber: #fbbf24; --v2-blue: #4f8cff; --v2-green: #22d47e; --v2-red: #ff4d5e;
+    --v2-tint: 0.16;
     --v2-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px rgba(0, 0, 0, 0.28);
   }
 }
@@ -10154,3 +10154,21 @@ html[data-theme="dark"] .dl-v2 {
 }
 .dl-v2 > * { flex-shrink: 0; }
 .dl2-stats, .dl2-chips { scroll-padding-inline: 16px; }
+
+/* V2 color punch-up: saturated semantic fills */
+.dl2-card { box-shadow: inset 3px 0 0 var(--edge); }
+.dl2-stat .dl2-dot { width: 9px; height: 9px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent); }
+.dl2-stat-count { color: var(--v2-text); }
+.dl2-stat[data-kind="collab"] .dl2-stat-count, .dl2-stat[data-kind="collab"] .dl2-stat-label { color: var(--v2-text); }
+.dl2-campaign, .dl2-status { font-weight: 600; background: color-mix(in srgb, var(--c) 18%, transparent); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.dl2-item { background: color-mix(in srgb, var(--c) 15%, transparent); border-color: color-mix(in srgb, var(--c) 40%, transparent); font-weight: 600; }
+.dl2-step-dot { border-color: color-mix(in srgb, var(--v2-text3) 70%, transparent); }
+.dl2-step[data-active="true"] .dl2-step-dot { color: #fff; }
+.dl2-check[data-checked="true"] .dl2-check-box { color: #fff; }
+.dl2-golive { background: color-mix(in srgb, var(--v2-blue) 14%, transparent); border-color: color-mix(in srgb, var(--v2-blue) 40%, transparent); color: var(--v2-text); }
+.dl2-complete[data-completed="true"] { background: color-mix(in srgb, var(--v2-green) 14%, transparent); border-color: color-mix(in srgb, var(--v2-green) 50%, transparent); color: var(--v2-text); }
+.dl2-complete[data-completed="true"] .dl2-complete-icon { color: #fff; }
+.dl2-btn-primary { box-shadow: 0 6px 18px color-mix(in srgb, var(--v2-accent) 35%, transparent); }
+.dl2-chip[data-active] { border-color: var(--v2-accent); }
+.dl-v2 .dl-tag-tbts   { background: color-mix(in srgb, var(--v2-accent) 20%, transparent); border: 1px solid color-mix(in srgb, var(--v2-accent) 40%, transparent); color: color-mix(in srgb, var(--v2-accent) 70%, white); }
+.dl-v2 .dl-tag-collab { background: color-mix(in srgb, var(--v2-amber) 18%, transparent); border: 1px solid color-mix(in srgb, var(--v2-amber) 40%, transparent); }
