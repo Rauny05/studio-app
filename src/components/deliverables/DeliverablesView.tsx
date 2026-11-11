@@ -1354,6 +1354,7 @@ export function DeliverablesView() {
   const [talent, setTalent] = useState("all");
   const [agencyFilter, setAgencyFilter] = useState("");
   const [collabOnly, setCollabOnly] = useState(false);
+  const [campaignFilter, setCampaignFilter] = useState<"open" | "closed" | null>(null);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [liveIndicator, setLiveIndicator] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1462,6 +1463,12 @@ export function DeliverablesView() {
     return ["all", ...Array.from(seen).sort()];
   }, [displayData]);
 
+  const campaignCounts = useMemo(() => {
+    const c = { open: 0, closed: 0 };
+    displayData.forEach((d) => { if (d.campaignStatus) c[d.campaignStatus]++; });
+    return c;
+  }, [displayData]);
+
   const collabCount = useMemo(() =>
     displayData.filter(mentionsCollab).length,
     [displayData]
@@ -1482,6 +1489,7 @@ export function DeliverablesView() {
       if (talent !== "all" && row.pocName !== talent) return false;
       if (agencyFilter && !matchesAgency(row, agencyFilter)) return false;
       if (collabOnly && !mentionsCollab(row)) return false;
+      if (campaignFilter && row.campaignStatus !== campaignFilter) return false;
       if (q) return (
         row.brand.toLowerCase().includes(q) ||
         row.pnNo.toLowerCase().includes(q) ||
@@ -1491,7 +1499,7 @@ export function DeliverablesView() {
       );
       return true;
     });
-  }, [displayData, filter, month, talent, agencyFilter, collabOnly, search]);
+  }, [displayData, filter, month, talent, agencyFilter, collabOnly, campaignFilter, search]);
 
   function copyPaymentSummary() {
     const rows = filtered.filter((r) => r.overallStatus === "awaiting-payment");
@@ -1646,6 +1654,17 @@ export function DeliverablesView() {
               <span className="dl-stat-dot" data-status={key} />
               {cfg.label}
               <span className="dl-stat-count">{counts[key]}</span>
+            </button>
+          ))}
+          {(["open", "closed"] as const).map((k) => (
+            <button key={k}
+              className={`dl-stat-pill dl-stat-pill-campaign ${campaignFilter === k ? "active" : ""}`}
+              data-state={k}
+              onClick={() => setCampaignFilter(campaignFilter === k ? null : k)}
+            >
+              <span className="dl-stat-dot" />
+              {k === "open" ? "Open" : "Closed"}
+              <span className="dl-stat-count">{campaignCounts[k]}</span>
             </button>
           ))}
           {collabCount > 0 && (

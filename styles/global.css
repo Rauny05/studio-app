@@ -9660,3 +9660,10 @@ html[data-theme="light"] .dl-card[data-tbts="true"]   { border-color: rgba(120, 
 .dl-campaign-pill[data-state="open"]   { color: #34d399; background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.28); }
 .dl-campaign-pill[data-state="closed"] { color: #9ca3af; background: rgba(156, 163, 175, 0.12); border-color: rgba(156, 163, 175, 0.24); }
 .dl-card-header .dl-campaign-pill { margin-right: auto; } /* hug the PN badge, keep status group right */
+
+/* Open / Closed campaign filter pills in the stats strip */
+.dl-stat-pill-campaign[data-state="open"]   { color: #34d399; }
+.dl-stat-pill-campaign[data-state="closed"] { color: #9ca3af; }
+.dl-stat-pill-campaign .dl-stat-dot { background: currentColor; }
+.dl-stat-pill-campaign[data-state="open"].active   { border-color: #34d399; background: rgba(52, 211, 153, 0.12); }
+.dl-stat-pill-campaign[data-state="closed"].active { border-color: #9ca3af; background: rgba(156, 163, 175, 0.14); }
