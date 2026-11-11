@@ -10315,3 +10315,19 @@ html[data-theme="dark"] .dl-v2 { --v2-bg: #12131a; --v2-card: #090a0e; --v2-elev
 .dl2-grid[data-cols="4"] { --dl-h: 450px; }
 .dl2-grid[data-view="grid"][data-cols="5"] { --dl-h: 480px; }
 .dl2-grid[data-view="grid"][data-cols="6"] { --dl-h: 520px; }
+
+/* Open / Closed pills: subtle, constant breathing glow in their own colour */
+@keyframes dl2-pill-glow {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 0%, transparent), 0 0 4px 0 color-mix(in srgb, var(--c) 22%, transparent); }
+  50%      { box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 16%, transparent), 0 0 12px 1px color-mix(in srgb, var(--c) 50%, transparent); }
+}
+@keyframes dl2-pill-dot {
+  0%, 100% { opacity: .65; box-shadow: 0 0 2px 0 var(--c); }
+  50%      { opacity: 1;   box-shadow: 0 0 6px 1px var(--c); }
+}
+.dl2-campaign[data-state="open"], .dl2-campaign[data-state="closed"] { animation: dl2-pill-glow 2.8s ease-in-out infinite; }
+.dl2-campaign[data-state="open"]::before, .dl2-campaign[data-state="closed"]::before { animation: dl2-pill-dot 2.8s ease-in-out infinite; }
+.dl2-campaign[data-state="closed"], .dl2-campaign[data-state="closed"]::before { animation-delay: -1.4s; }
+@media (prefers-reduced-motion: reduce) {
+  .dl2-campaign[data-state], .dl2-campaign[data-state]::before { animation: none; }
+}
