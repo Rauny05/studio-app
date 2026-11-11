@@ -10275,3 +10275,7 @@ html[data-theme="dark"] .dl-v2 { --v2-bg: #12131a; --v2-card: #090a0e; --v2-elev
 .dl2-grid[data-view="grid"] .dl2-items { max-height: 60px; overflow: hidden; }
 .dl2-grid[data-view="grid"] .dl2-detail { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dl2-grid[data-view="grid"] .dl2-metas { max-height: 56px; overflow: hidden; }
+
+/* Stat tiles: don't clip the status dot's glow ring */
+.dl2-stat-label { overflow: clip; overflow-clip-margin: 6px; text-overflow: clip; padding-left: 3px; }
+.dl2-stat { overflow: visible; }
