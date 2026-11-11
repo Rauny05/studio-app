@@ -1270,13 +1270,16 @@ function DeliverableCard({
               const done = item.status === "Completed";
               const isCollab = /collab/i.test(item.label);
               return (
-                <li key={i} className="dl2-item" data-done={done} data-collab={isCollab || undefined}>
+                <li key={i} className="dl2-item" title={item.label} data-done={done} data-collab={isCollab || undefined}>
                   <span className="dl2-item-dot" aria-hidden="true">{done && <IconCheck size={8} stroke={3.6} />}</span>
                   <span className="dl2-item-label"><Highlight text={item.label} query={search} /></span>
                   <span className="sr-only">{done ? " (completed)" : " (pending)"}</span>
                 </li>
               );
             })}
+            {total > 3 && (
+              <li className="dl2-more" aria-hidden="true">+{total - 3} more</li>
+            )}
           </ul>
         )}
       </div>
