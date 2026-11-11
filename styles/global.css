@@ -10192,3 +10192,86 @@ html[data-theme="dark"] .dl-v2 .dl2-title { color: #ffffff; }
 .dl2-grid[data-view="list"] .dl2-card-top { border-bottom: 0; padding-bottom: 0; }
 .dl2-grid[data-view="list"] .dl2-title { font-size: 16px; }
 @media (max-width: 640px) { .dl2-title { font-size: 17px; } }
+
+/* Narrower cards: pack ~270px columns (2 on tablet, 4+ on desktop, 1 on phone) */
+.dl2-grid[data-view="grid"] { grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 12px; }
+.dl2-grid[data-view="grid"] .dl2-card { padding: 14px 14px 14px 17px; }
+.dl2-card-top { flex-wrap: nowrap; gap: 6px; }
+.dl2-grid[data-view="grid"] .dl2-pn { font-size: 11px; letter-spacing: 0; }
+.dl2-grid[data-view="grid"] .dl2-campaign,
+.dl2-grid[data-view="grid"] .dl2-status { font-size: 11px; padding: 0 7px; height: 20px; }
+.dl2-grid[data-view="grid"] .dl2-flags { gap: 3px; }
+@media (max-width: 640px) { .dl2-grid[data-view="grid"] { grid-template-columns: 1fr; } }
+
+/* Smaller Mark as Completed / Completed button */
+.dl2-complete { height: 30px; padding: 0 10px; border-radius: 7px; font-size: 12px; gap: 6px; }
+.dl2-complete-icon svg { width: 11px; height: 11px; }
+.dl2-complete[data-completed="true"] .dl2-complete-icon { width: 16px; height: 16px; }
+.dl2-undo { font-size: 12px; }
+.dl2-grid[data-view="list"] .dl2-complete { height: 30px; }
+
+/* Column cap: never more than 5 across, never narrower than 280px (fixes 6 cramped columns on wide screens) */
+.dl2-grid[data-view="grid"] {
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(max(280px, calc((100% - 4 * 14px) / 5)), 1fr));
+}
+@media (max-width: 640px) { .dl2-grid[data-view="grid"] { grid-template-columns: 1fr; } }
+.dl2-grid[data-view="grid"] .dl2-card { padding: 16px 16px 16px 19px; gap: 12px; }
+
+/* Declutter: cards fit their content; advance joins the payment row as a compact checkbox */
+.dl2-grid[data-view="grid"] { align-items: start; }
+.dl2-payrow { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.dl2-payrow .dl2-steps { gap: 14px; flex-wrap: nowrap; min-width: 0; }
+.dl2-payrow .dl2-check { margin-left: auto; padding: 2px; font-size: 12px; gap: 6px; flex-shrink: 0; }
+.dl2-payrow .dl2-check[data-checked="true"] { color: var(--v2-green); font-weight: 600; }
+.dl2-payrow .dl2-check-label:empty { display: none; }
+.dl2-metas { gap: 4px 12px; }
+.dl2-note { -webkit-line-clamp: 1; }
+.dl2-card { gap: 12px; }
+
+/* Exactly up to 4 cards per row, with room between them (3 / 2 / 1 as the window narrows) */
+.dl2-grid[data-view="grid"] {
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(max(280px, calc((100% - 3 * 20px) / 4)), 1fr));
+}
+@media (max-width: 640px) { .dl2-grid[data-view="grid"] { grid-template-columns: 1fr; gap: 14px; } }
+
+/* Blacker cards: near-black surfaces on a slightly lifted page background */
+html[data-theme="dark"] .dl-v2 { --v2-bg: #12131a; --v2-card: #090a0e; --v2-elev: #14151c; --v2-border: #22232e; }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .dl-v2 { --v2-bg: #12131a; --v2-card: #090a0e; --v2-elev: #14151c; --v2-border: #22232e; }
+}
+
+/* Breathing room: more space between cards and inside them */
+.dl2-grid[data-view="grid"] {
+  gap: 28px 24px;
+  grid-template-columns: repeat(auto-fill, minmax(max(250px, calc((100% - 3 * 24px) / 4)), 1fr));
+}
+.dl2-grid[data-view="grid"] .dl2-card { padding: 22px 22px 22px 26px; gap: 18px; border-radius: 14px; }
+.dl2-card-top { padding-bottom: 14px; }
+.dl2-identity { gap: 14px; }
+.dl2-items { gap: 8px; }
+.dl2-detail { margin-top: 2px; }
+.dl2-payrow { padding-top: 2px; }
+.dl2-metas { gap: 8px 14px; margin-top: 2px; }
+.dl2-complete { margin-top: 4px; height: 34px; }
+.dl-v2 { padding: 28px 32px 56px; gap: 22px; }
+@media (max-width: 640px) {
+  .dl2-grid[data-view="grid"] { gap: 20px; }
+  .dl2-grid[data-view="grid"] .dl2-card { padding: 20px 18px 20px 22px; }
+  .dl-v2 { padding: 18px 16px 48px; }
+}
+
+/* Equal-size cards: every card in a row stretches to the tallest; action pinned to bottom */
+.dl2-grid[data-view="grid"] { align-items: stretch; }
+.dl2-grid[data-view="grid"] .dl2-card { height: 100%; display: flex; flex-direction: column; }
+.dl2-grid[data-view="grid"] .dl2-card > .dl2-complete,
+.dl2-grid[data-view="grid"] .dl2-card > .dl2-completed-bar { margin-top: auto; }
+
+/* Fixed card size: identical height for every card; long content is clamped */
+.dl2-grid[data-view="grid"] { grid-auto-rows: 340px; }
+.dl2-grid[data-view="grid"] .dl2-card { height: 340px; overflow: hidden; }
+.dl2-grid[data-view="grid"] .dl2-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dl2-grid[data-view="grid"] .dl2-items { max-height: 60px; overflow: hidden; }
+.dl2-grid[data-view="grid"] .dl2-detail { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl2-grid[data-view="grid"] .dl2-metas { max-height: 56px; overflow: hidden; }

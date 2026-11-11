@@ -1290,7 +1290,8 @@ function DeliverableCard({
         </div>
       )}
 
-      {/* D + E. Payment pipeline (Email → 50% → Paid), production dates, advance */}
+      {/* D + E. Payment pipeline and advance share one row */}
+      <div className="dl2-payrow">
       <ol className="dl2-steps" aria-label={`Payment: ${PAYMENT_LABELS[row.paymentStep]}`}>
         {PAYMENT_STEPS.map((step, i) => {
           const active = i < row.paymentStep;
@@ -1309,6 +1310,20 @@ function DeliverableCard({
           );
         })}
       </ol>
+
+      {/* Advance received — independent of payment pipeline */}
+      <button
+        type="button"
+        className="dl2-check"
+        data-checked={advRcvd}
+        aria-pressed={advRcvd}
+        onClick={toggleAdv}
+        title={advRcvd ? "Advance received" : "Mark advance as received"}
+      >
+        <span className="dl2-check-box" aria-hidden="true">{advRcvd && <IconCheck size={9} stroke={3.6} />}</span>
+        <span className="dl2-check-label">{advRcvd ? "Advance" : <span className="sr-only">Advance received</span>}</span>
+      </button>
+      </div>
 
       {(row.goLiveDate || row.invoiceNumber || row.note || total > 1) && (
         <div className="dl2-metas">
@@ -1335,19 +1350,6 @@ function DeliverableCard({
           {row.note && <p className="dl2-note" title={row.note}><Highlight text={row.note} query={search} /></p>}
         </div>
       )}
-
-      {/* Advance received — independent of payment pipeline */}
-      <button
-        type="button"
-        className="dl2-check"
-        data-checked={advRcvd}
-        aria-pressed={advRcvd}
-        onClick={toggleAdv}
-        title={advRcvd ? "Advance received" : "Mark advance as received"}
-      >
-        <span className="dl2-check-box" aria-hidden="true">{advRcvd && <IconCheck size={9} stroke={3.6} />}</span>
-        Advance received
-      </button>
 
       {/* F. Primary action */}
       <button
