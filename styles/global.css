@@ -9667,3 +9667,30 @@ html[data-theme="light"] .dl-card[data-tbts="true"]   { border-color: rgba(120, 
 .dl-stat-pill-campaign .dl-stat-dot { background: currentColor; }
 .dl-stat-pill-campaign[data-state="open"].active   { border-color: #34d399; background: rgba(52, 211, 153, 0.12); }
 .dl-stat-pill-campaign[data-state="closed"].active { border-color: #9ca3af; background: rgba(156, 163, 175, 0.14); }
+
+/* Neon glow: Open = red, Closed = green (campaign pills + top filter pills) */
+.dl-campaign-pill[data-state="open"],
+.dl-stat-pill-campaign[data-state="open"] {
+  color: #ff3b4e;
+  border-color: rgba(255, 59, 78, 0.65);
+  background: rgba(255, 59, 78, 0.12);
+  text-shadow: 0 0 6px rgba(255, 59, 78, 0.8);
+  box-shadow: 0 0 8px rgba(255, 59, 78, 0.45), 0 0 18px rgba(255, 59, 78, 0.22), inset 0 0 6px rgba(255, 59, 78, 0.18);
+}
+.dl-campaign-pill[data-state="closed"],
+.dl-stat-pill-campaign[data-state="closed"] {
+  color: #2bff88;
+  border-color: rgba(43, 255, 136, 0.65);
+  background: rgba(43, 255, 136, 0.1);
+  text-shadow: 0 0 6px rgba(43, 255, 136, 0.8);
+  box-shadow: 0 0 8px rgba(43, 255, 136, 0.45), 0 0 18px rgba(43, 255, 136, 0.22), inset 0 0 6px rgba(43, 255, 136, 0.16);
+}
+.dl-campaign-pill[data-state="open"]::before,
+.dl-stat-pill-campaign[data-state="open"] .dl-stat-dot   { background: #ff3b4e; box-shadow: 0 0 6px 1px #ff3b4e; }
+.dl-campaign-pill[data-state="closed"]::before,
+.dl-stat-pill-campaign[data-state="closed"] .dl-stat-dot { background: #2bff88; box-shadow: 0 0 6px 1px #2bff88; }
+.dl-stat-pill-campaign[data-state="open"]:hover   { border-color: #ff3b4e; }
+.dl-stat-pill-campaign[data-state="closed"]:hover { border-color: #2bff88; }
+.dl-stat-pill-campaign[data-state="open"].active   { background: rgba(255, 59, 78, 0.24); border-color: #ff3b4e; }
+.dl-stat-pill-campaign[data-state="closed"].active { background: rgba(43, 255, 136, 0.22); border-color: #2bff88; }
+.dl-stat-pill-campaign .dl-stat-count { color: inherit; }
