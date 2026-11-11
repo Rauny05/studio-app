@@ -34,5 +34,6 @@ export function mergeSheetRow(row: DeliverableRow, ov: DeliverableRow | undefine
     deliverables,
     overallStatus: computeOverallStatus(deliverables, ov.payment100),
     goLiveDate: row.goLiveDate ?? ov.goLiveDate,
+    campaignStatus: row.campaignStatus,
   };
 }

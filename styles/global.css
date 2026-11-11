@@ -9640,3 +9640,19 @@ html[data-theme="light"] .dl-tag-collab { color: #9a4126; background: rgba(220, 
 html[data-theme="light"] .dl-card[data-collab="true"] { border-color: rgba(220, 120, 90, 0.45); }
 html[data-theme="light"] .dl-card[data-tbts="true"]   { border-color: rgba(120, 100, 220, 0.45); }
 
+
+/* Campaign open/closed tag (sheet "Status" column) */
+.dl-campaign-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  vertical-align: middle;
+}
+.dl-campaign-tag[data-state="open"]   { color: #34d399; background: rgba(52, 211, 153, 0.14); }
+.dl-campaign-tag[data-state="closed"] { color: #9ca3af; background: rgba(156, 163, 175, 0.14); }

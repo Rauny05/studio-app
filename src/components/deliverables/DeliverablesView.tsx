@@ -574,6 +574,9 @@ export function DeliverableModal({
             <span className="dl-pn-badge">
               <span className="dl-pn-dot" data-status={local.overallStatus} />
               {local.pnNo.toUpperCase()}
+              {local.campaignStatus && (
+              <span className="dl-campaign-tag" data-state={local.campaignStatus}>{local.campaignStatus}</span>
+            )}
               <button
                 className="dl-pn-copy-btn"
                 onClick={copyPn}
@@ -1178,6 +1181,9 @@ function DeliverableCard({
           <span className="dl-pn-badge">
             <span className="dl-pn-dot" data-status={row.overallStatus} />
             <Highlight text={row.pnNo.toUpperCase()} query={search} />
+            {row.campaignStatus && (
+              <span className="dl-campaign-tag" data-state={row.campaignStatus}>{row.campaignStatus}</span>
+            )}
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             {isTbts && <Tag label="TBTS" kind="tbts" />}

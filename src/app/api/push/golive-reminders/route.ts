@@ -113,13 +113,16 @@ export async function GET(req: NextRequest) {
     if (res.ok) {
       const text = await res.text();
       const rows = parseCSVRows(text);
+      const hdr = (rows[0] ?? []).map((h) => (h ?? "").replace(/\s+/g, " ").trim().toLowerCase());
+      const col = (fb: number, n: string) => { const x = hdr.findIndex((h) => h.startsWith(n)); return x === -1 ? fb : x; };
+      const cPn = col(0, "pn no"), cBrand = col(1, "brand"), cLive = col(4, "go live");
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        const pnNo  = (row[0] ?? "").trim();
-        const brand = (row[1] ?? "").trim();
+        const pnNo  = (row[cPn] ?? "").trim();
+        const brand = (row[cBrand] ?? "").trim();
         if (!brand) continue;
         const id = pnNo || `row-${i}`;
-        const goLiveDate = parseGoLiveDate((row[4] ?? "").trim()) ?? undefined;
+        const goLiveDate = parseGoLiveDate((row[cLive] ?? "").trim()) ?? undefined;
         sheetRows.push({ id, pnNo, brand, goLiveDate } as DeliverableRow);
       }
     }

@@ -93,8 +93,23 @@ export async function markCompletedInSheet(row: DeliverableRow, item: Deliverabl
     const token = await getAccessToken(account);
     const title = await getTabTitle(token);
 
-    // Locate the row by PN number (column A) — same row order the CSV export uses.
-    const colARes = await fetch(rangeUrl(title, "A:A"), {
+    // Resolve PN / Deliverables columns by header so inserted columns don't break write-back.
+    const hdrRes = await fetch(rangeUrl(title, "1:1"), {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!hdrRes.ok) throw new Error(`Failed to read header row: ${hdrRes.status}`);
+    const hdr = (((await hdrRes.json()) as { values?: string[][] }).values?.[0] ?? []).map((h) =>
+      (h ?? "").replace(/\s+/g, " ").trim().toLowerCase(),
+    );
+    const letter = (i: number) => String.fromCharCode(65 + i); // sheet has < 26 columns
+    const pnIdx = Math.max(0, hdr.findIndex((h) => h.startsWith("pn no")));
+    const delIdx = Math.max(0, hdr.findIndex((h) => h.startsWith("deliverables")));
+    const pnCol = letter(pnIdx);
+    const delCol = letter(delIdx);
+
+    // Locate the row by PN number — same row order the CSV export uses.
+    const colARes = await fetch(rangeUrl(title, `${pnCol}:${pnCol}`), {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
@@ -109,7 +124,7 @@ export async function markCompletedInSheet(row: DeliverableRow, item: Deliverabl
     const sheetRow = rowIndex + 1; // 1-indexed A1 row number
 
     // Read the current deliverables cell (column C) and flip the matching line.
-    const cellRes = await fetch(rangeUrl(title, `C${sheetRow}`), {
+    const cellRes = await fetch(rangeUrl(title, `${delCol}${sheetRow}`), {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
@@ -131,7 +146,7 @@ export async function markCompletedInSheet(row: DeliverableRow, item: Deliverabl
       return;
     }
 
-    const updateRes = await fetch(`${rangeUrl(title, `C${sheetRow}`)}?valueInputOption=RAW`, {
+    const updateRes = await fetch(`${rangeUrl(title, `${delCol}${sheetRow}`)}?valueInputOption=RAW`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ values: [[updatedLines.join("\n")]] }),
@@ -152,7 +167,7 @@ export async function markCompletedInSheet(row: DeliverableRow, item: Deliverabl
                 startRowIndex: rowIndex,
                 endRowIndex: rowIndex + 1,
                 startColumnIndex: 0,
-                endColumnIndex: 10,
+                endColumnIndex: Math.max(11, hdr.length),
               },
               cell: { userEnteredFormat: { backgroundColor: YELLOW } },
               fields: "userEnteredFormat.backgroundColor",

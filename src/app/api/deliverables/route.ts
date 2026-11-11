@@ -87,6 +87,7 @@ export interface DeliverableRow {
   overallStatus: "pending" | "in-progress" | "awaiting-payment" | "done";
   month: string;
   goLiveDate?: string;       // YYYY-MM-DD
+  campaignStatus?: "open" | "closed"; // sheet "Status" column
   activityLog?: ActivityEntry[];
 }
 
@@ -155,26 +156,49 @@ export async function GET(req: import("next/server").NextRequest) {
     const rows = parseCSV(text);
     const dataRows: DeliverableRow[] = [];
 
+    // Resolve columns by header name so inserted columns don't shift the mapping.
+    const norm = (h: string) => (h ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    const headers = (rows[0] ?? []).map(norm);
+    const find = (fallback: number, ...names: string[]) => {
+      const idx = headers.findIndex((h) => names.some((n) => h === n || h.startsWith(n)));
+      return idx === -1 ? fallback : idx;
+    };
+    const C = {
+      status: find(-1, "status"),
+      pn: find(0, "pn no"),
+      brand: find(1, "brand"),
+      del: find(2, "deliverables"),
+      poc: find(3, "poc"),
+      live: find(4, "go live"),
+      email: find(5, "email sent"),
+      adv: find(6, "50%"),
+      pay: find(7, "100%"),
+      inv: find(8, "invoice"),
+      note: find(9, "note"),
+    };
+
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       if (!row || row.length < 2) continue;
 
-      const pnNo = (row[0] ?? "").trim();
-      const brand = (row[1] ?? "").trim();
+      const pnNo = (row[C.pn] ?? "").trim();
+      const brand = (row[C.brand] ?? "").trim();
 
       // Skip rows with no usable data
       if (!pnNo && !brand) continue;
       // Skip clearly empty / header-like rows
       if (!brand) continue;
 
-      const delRaw = (row[2] ?? "").trim();
-      const pocRaw = (row[3] ?? "").trim();
-      const goLiveDateRaw = (row[4] ?? "").trim();
-      const emailSent = (row[5] ?? "").trim().toLowerCase() === "yes";
-      const advance50 = (row[6] ?? "").trim().toLowerCase() === "yes";
-      const payment100 = (row[7] ?? "").trim().toLowerCase() === "yes";
-      const invoiceNumber = (row[8] ?? "").trim();
-      const note = (row[9] ?? "").trim();
+      const st = (C.status >= 0 ? (row[C.status] ?? "") : "").trim().toLowerCase();
+      const campaignStatus = st === "open" || st === "closed" ? st : undefined;
+      const delRaw = (row[C.del] ?? "").trim();
+      const pocRaw = (row[C.poc] ?? "").trim();
+      const goLiveDateRaw = (row[C.live] ?? "").trim();
+      const emailSent = (row[C.email] ?? "").trim().toLowerCase() === "yes";
+      const advance50 = (row[C.adv] ?? "").trim().toLowerCase() === "yes";
+      const payment100 = (row[C.pay] ?? "").trim().toLowerCase() === "yes";
+      const invoiceNumber = (row[C.inv] ?? "").trim();
+      const note = (row[C.note] ?? "").trim();
 
       const { name: pocName, company: pocCompany } = parsePOC(pocRaw);
       const deliverables = parseDeliverables(delRaw);
@@ -200,6 +224,7 @@ export async function GET(req: import("next/server").NextRequest) {
         overallStatus: computeOverallStatus(deliverables, payment100),
         month: parseMonth(pnNo),
         ...(goLiveDate ? { goLiveDate } : {}),
+        ...(campaignStatus ? { campaignStatus } : {}),
       });
     }
 
