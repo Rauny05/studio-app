@@ -10279,3 +10279,9 @@ html[data-theme="dark"] .dl-v2 { --v2-bg: #12131a; --v2-card: #090a0e; --v2-elev
 /* Stat tiles: don't clip the status dot's glow ring */
 .dl2-stat-label { overflow: clip; overflow-clip-margin: 6px; text-overflow: clip; padding-left: 3px; }
 .dl2-stat { overflow: visible; }
+
+/* Fixed card size, final: children must not shrink (that cropped the meta row); taller to fit content */
+.dl2-grid[data-view="grid"] { grid-auto-rows: 416px; }
+.dl2-grid[data-view="grid"] .dl2-card { height: 416px; gap: 14px; }
+.dl2-grid[data-view="grid"] .dl2-card > * { flex-shrink: 0; }
+.dl2-grid[data-view="grid"] .dl2-metas { max-height: 56px; overflow: hidden; }
