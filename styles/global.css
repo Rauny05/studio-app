@@ -10331,3 +10331,7 @@ html[data-theme="dark"] .dl-v2 { --v2-bg: #12131a; --v2-card: #090a0e; --v2-elev
 @media (prefers-reduced-motion: reduce) {
   .dl2-campaign[data-state], .dl2-campaign[data-state]::before { animation: none; }
 }
+
+/* Let the pill glow spill past its row instead of being clipped */
+.dl2-id { overflow: clip; overflow-clip-margin: 16px; }
+.dl2-pn { overflow: clip; overflow-clip-margin: 4px; }
