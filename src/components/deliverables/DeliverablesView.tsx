@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { DeliverableRow, DeliverableItem, ActivityEntry } from "@/app/api/deliverables/route";
@@ -1424,6 +1424,10 @@ export function DeliverablesView() {
     if (typeof window === "undefined") return "grid";
     try { return localStorage.getItem("dl-view-mode") === "list" ? "list" : "grid"; } catch { return "grid"; }
   });
+  const [cols, setCols] = useState<3 | 4 | 5 | 6>(() => {
+    if (typeof window === "undefined") return 4;
+    try { const n = Number(localStorage.getItem("dl-cols")); return n === 3 || n === 5 || n === 6 ? n : 4; } catch { return 4; }
+  });
   const moreRef = useRef<HTMLDivElement>(null);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [liveIndicator, setLiveIndicator] = useState(false);
@@ -1636,6 +1640,10 @@ export function DeliverablesView() {
   useEffect(() => {
     try { localStorage.setItem("dl-view-mode", viewMode); } catch { /* storage unavailable */ }
   }, [viewMode]);
+
+  useEffect(() => {
+    try { localStorage.setItem("dl-cols", String(cols)); } catch { /* storage unavailable */ }
+  }, [cols]);
 
   // Close the More filters popover on outside click / Escape
   useEffect(() => {
@@ -1900,6 +1908,14 @@ export function DeliverablesView() {
             )}
           </div>
 
+          {viewMode === "grid" && (
+            <div className="dl2-view dl2-cols" role="group" aria-label="Cards per row">
+              {([3, 4, 5, 6] as const).map((n) => (
+                <button key={n} type="button" aria-label={`${n} cards per row`} title={`${n} per row`} aria-pressed={cols === n} onClick={() => setCols(n)}>{n}</button>
+              ))}
+            </div>
+          )}
+
           <div className="dl2-view" role="group" aria-label="Layout">
             <button type="button" aria-label="Grid view" aria-pressed={viewMode === "grid"} onClick={() => setViewMode("grid")}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
@@ -2024,7 +2040,7 @@ export function DeliverablesView() {
       )}
 
       {!loading && !error && filtered.length > 0 && (
-        <div className="dl2-grid" data-view={viewMode}>
+        <div className="dl2-grid" data-view={viewMode} data-cols={cols} style={{ "--dl-cols": cols } as CSSProperties}>
           {sorted.map((row) => (
             <DeliverableCard
               key={row.id}
