@@ -1115,6 +1115,30 @@ function CompletionFlowModal({
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
+const PAYMENT_LABELS = ["Not started", "Email sent", "50% received", "Paid"] as const;
+
+function IconUser() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+function IconCalendar() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+function IconCheck({ size = 10, stroke = 3.2 }: { size?: number; stroke?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
 function DeliverableCard({
   row,
   search,
@@ -1159,169 +1183,191 @@ function DeliverableCard({
     });
   }
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("keydown", close);
+    return () => document.removeEventListener("keydown", close);
+  }, [menuOpen]);
+
   const isTbts = mentionsTbts(row);
   const hasCollab = mentionsCollab(row);
+  const total = row.deliverables.length;
+  const doneCount = row.deliverables.filter((d) => d.status === "Completed").length;
+  const pct = total ? Math.round((doneCount / total) * 100) : 0;
 
   return (
-    <div
-      className="dl-card"
+    <article
+      className="dl2-card"
       data-status={row.overallStatus}
       data-completed={completed}
       data-tbts={isTbts || undefined}
       data-collab={hasCollab || undefined}
+      data-campaign={row.campaignStatus}
       onClick={onClick}
-      style={{ cursor: "pointer" }}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick(); }}
+      aria-label={`${row.pnNo.toUpperCase()} ${row.brand}, ${status.label}`}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
+      }}
     >
-      <div className="dl-card-stripe" data-status={row.overallStatus} />
-      <div className="dl-card-inner">
-        <div className="dl-card-header">
-          <span className="dl-pn-badge">
-            <span className="dl-pn-dot" data-status={row.overallStatus} />
-            <Highlight text={row.pnNo.toUpperCase()} query={search} />
-          </span>
+      {/* A. Top row */}
+      <header className="dl2-card-top">
+        <div className="dl2-id">
+          <span className="dl2-pn"><Highlight text={row.pnNo.toUpperCase()} query={search} /></span>
           {row.campaignStatus && (
-            <span className="dl-campaign-pill" data-state={row.campaignStatus}>{row.campaignStatus}</span>
-          )}
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            {isTbts && <Tag label="TBTS" kind="tbts" />}
-            {isLocal && <span className="dl-local-badge" title="Locally created card">Local</span>}
-            {modified && !isLocal && <span className="dl-modified-dot" title="Locally modified" />}
-            {hasCollab && <Tag label="COLLAB" kind="collab" />}
-            <span className="dl-status-pill" data-status={row.overallStatus}>
-              {status.label}
+            <span className="dl2-campaign" data-state={row.campaignStatus}>
+              {row.campaignStatus === "open" ? "Open" : "Closed"}
             </span>
+          )}
+        </div>
+        <div className="dl2-flags">
+          {isLocal && <span className="dl2-flag" title="Locally created card">Local</span>}
+          {modified && !isLocal && <span className="dl2-modified" title="Edited in app" aria-label="Edited in app" />}
+          <span className="dl2-status" data-status={row.overallStatus} title={status.label}>
+            <span className="dl2-dot" />{row.overallStatus === "awaiting-payment" ? "Awaiting" : status.label}
+          </span>
+          <div className="dl2-menu" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            <button type="button" className="dl2-menu-btn" aria-label={`Actions for ${row.pnNo.toUpperCase()}`} aria-haspopup="menu" aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div className="dl2-menu-list" role="menu" onMouseLeave={() => setMenuOpen(false)}>
+                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); onClick(); }}>Open details</button>
+                <button type="button" role="menuitem" onClick={() => {
+                  navigator.clipboard?.writeText(row.pnNo.toUpperCase()).catch(() => {});
+                  setMenuOpen(false);
+                }}>Copy PN number</button>
+                <button type="button" role="menuitem" onClick={(e) => { setMenuOpen(false); toggleAdv(e); }}>
+                  {advRcvd ? "Unmark advance received" : "Mark advance received"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
+      </header>
 
-        <h3 className="dl-brand">
-          <Highlight text={row.brand} query={search} />
-        </h3>
-
-        {row.deliverables.length > 0 && (
-          <div className="dl-items">
+      {/* B. Campaign identity */}
+      <div className="dl2-identity">
+        <div className="dl2-title-line">
+          <h3 className="dl2-title"><Highlight text={row.brand} query={search} /></h3>
+          {(isTbts || hasCollab) && (
+            <span className="dl2-title-tags">
+              {isTbts && <Tag label="TBTS" kind="tbts" />}
+              {hasCollab && <Tag label="COLLAB" kind="collab" />}
+            </span>
+          )}
+        </div>
+        {total > 0 && (
+          <ul className="dl2-items">
             {row.deliverables.map((item, i) => {
               const done = item.status === "Completed";
               const isCollab = /collab/i.test(item.label);
               return (
-                <span key={i} className={`dl-chip${isCollab ? " dl-chip-collab" : ""}`} data-done={done}>
-                  <span className="dl-chip-dot" data-done={done} />
-                  <span className="dl-chip-label">
-                    <Highlight text={item.label} query={search} />
-                  </span>
-                  {isCollab && <span className="dl-chip-collab-dot" />}
-                </span>
+                <li key={i} className="dl2-item" data-done={done} data-collab={isCollab || undefined}>
+                  <span className="dl2-item-dot" aria-hidden="true">{done && <IconCheck size={8} stroke={3.6} />}</span>
+                  <span className="dl2-item-label"><Highlight text={item.label} query={search} /></span>
+                  <span className="sr-only">{done ? " (completed)" : " (pending)"}</span>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
-
-        <div className="dl-card-footer">
-          {row.pocName && (
-            <div className="dl-poc">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-              </svg>
-              <span className="dl-poc-name"><Highlight text={row.pocName} query={search} /></span>
-              {row.pocCompany && <span className="dl-poc-company"><Highlight text={row.pocCompany} query={search} /></span>}
-            </div>
-          )}
-          <div className="dl-payment">
-            {PAYMENT_STEPS.map((step, i) => (
-              <div key={step} className="dl-payment-step">
-                <div className="dl-payment-dot" style={i < row.paymentStep ? { background: "#22c55e", borderColor: "#22c55e" } : {}}>
-                  {i < row.paymentStep && (
-                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </div>
-                <span className="dl-payment-label" data-active={i < row.paymentStep}>{step}</span>
-                {i < PAYMENT_STEPS.length - 1 && <div className="dl-payment-line" data-active={i + 1 <= row.paymentStep} />}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {(row.invoiceNumber || row.note) && (
-          <div className="dl-meta">
-            {row.invoiceNumber && (
-              <span className="dl-meta-item">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
-                </svg>
-                {row.invoiceNumber}
-              </span>
-            )}
-            {row.note && (
-              <span className="dl-meta-item dl-note" title={row.note}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                <Highlight text={row.note} query={search} />
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Go-live date badge */}
-        {row.goLiveDate && (
-          <div className="dl-golive-badge">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span className="dl-golive-label">Go live</span>
-            <span className="dl-golive-date">{new Date(row.goLiveDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</span>
-          </div>
-        )}
-
-        {/* Advance received — independent of payment pipeline */}
-        <button
-          className="dl-advance-check"
-          data-checked={advRcvd}
-          onClick={toggleAdv}
-          title={advRcvd ? "Advance received ✓" : "Mark advance as received"}
-        >
-          <span className="dl-advance-box">
-            {advRcvd && (
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            )}
-          </span>
-          <span className="dl-advance-label">Advance received</span>
-        </button>
-
-        {/* Completed button */}
-        <button
-          className="dl-completed-btn"
-          data-completed={completed}
-          onClick={toggleCompleted}
-        >
-          <span className="dl-completed-icon">
-            {completed ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            )}
-          </span>
-          <span className="dl-completed-label">
-            {completed ? "Deliverable Completed" : "Mark as Completed"}
-          </span>
-          {completed && <span className="dl-completed-undo">undo</span>}
-        </button>
-
-        {/* Tap hint on mobile */}
-        <div className="dl-card-tap-hint">Tap to open</div>
       </div>
-    </div>
+
+      {/* C. Campaign details */}
+      {(row.pocName || row.pocCompany) && (
+        <div className="dl2-detail">
+          <IconUser />
+          {row.pocName && <span className="dl2-detail-strong"><Highlight text={row.pocName} query={search} /></span>}
+          {row.pocCompany && <span className="dl2-detail-muted"><Highlight text={row.pocCompany} query={search} /></span>}
+        </div>
+      )}
+
+      {/* D + E. Payment pipeline (Email → 50% → Paid), production dates, advance */}
+      <ol className="dl2-steps" aria-label={`Payment: ${PAYMENT_LABELS[row.paymentStep]}`}>
+        {PAYMENT_STEPS.map((step, i) => {
+          const active = i < row.paymentStep;
+          return (
+            <li key={step} className="dl2-step" data-active={active}>
+              <span className="dl2-step-dot" aria-hidden="true">
+                {active ? <IconCheck size={9} stroke={3.6} /> : i === 0 ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" />
+                  </svg>
+                ) : null}
+              </span>
+              <span className="dl2-step-label">{step}</span>
+              <span className="sr-only">{active ? " done" : " not done"}</span>
+            </li>
+          );
+        })}
+      </ol>
+
+      {(row.goLiveDate || row.invoiceNumber || row.note || total > 1) && (
+        <div className="dl2-metas">
+          {row.goLiveDate && (
+            <span className="dl2-golive">
+              <IconCalendar />
+              Go live <strong>{new Date(row.goLiveDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</strong>
+            </span>
+          )}
+          {total > 1 && (
+            <span className="dl2-meta" title="Production progress">
+              <span className="dl2-progress" aria-hidden="true"><span style={{ width: `${pct}%` }} /></span>
+              {doneCount}/{total} done
+            </span>
+          )}
+          {row.invoiceNumber && (
+            <span className="dl2-meta dl2-mono" title="Invoice number">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+              </svg>
+              {row.invoiceNumber}
+            </span>
+          )}
+          {row.note && <p className="dl2-note" title={row.note}><Highlight text={row.note} query={search} /></p>}
+        </div>
+      )}
+
+      {/* Advance received — independent of payment pipeline */}
+      <button
+        type="button"
+        className="dl2-check"
+        data-checked={advRcvd}
+        aria-pressed={advRcvd}
+        onClick={toggleAdv}
+        title={advRcvd ? "Advance received" : "Mark advance as received"}
+      >
+        <span className="dl2-check-box" aria-hidden="true">{advRcvd && <IconCheck size={9} stroke={3.6} />}</span>
+        Advance received
+      </button>
+
+      {/* F. Primary action */}
+      <button
+        type="button"
+        className="dl2-complete"
+        data-completed={completed}
+        aria-pressed={completed}
+        onClick={toggleCompleted}
+      >
+        <span className="dl2-complete-icon" aria-hidden="true">
+          {completed ? <IconCheck size={12} stroke={2.8} /> : (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+          )}
+        </span>
+        <span>{completed ? "Deliverable Completed" : "Mark as Completed"}</span>
+        {completed && <span className="dl2-undo">Undo</span>}
+      </button>
+    </article>
   );
 }
 
@@ -1334,6 +1380,18 @@ const FILTER_TABS: { key: FilterTab; label: string }[] = [
   { key: "awaiting-payment", label: "Awaiting" },
   { key: "done", label: "Done" },
 ];
+
+type SortKey = "default" | "golive" | "brand" | "status" | "payment";
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "default", label: "Latest (sheet order)" },
+  { key: "golive",  label: "Go-live (upcoming first)" },
+  { key: "brand",   label: "Brand A–Z" },
+  { key: "status",  label: "Production status" },
+  { key: "payment", label: "Payment status" },
+];
+const TYPE_LABELS: Record<string, string> = {
+  reel: "Reel", story: "Story", youtube: "YouTube / video", post: "Post", podcast: "Podcast", general: "Other",
+};
 
 // ── Main view ─────────────────────────────────────────────────────────────────
 export function DeliverablesView() {
@@ -1355,6 +1413,16 @@ export function DeliverablesView() {
   const [agencyFilter, setAgencyFilter] = useState("");
   const [collabOnly, setCollabOnly] = useState(false);
   const [campaignFilter, setCampaignFilter] = useState<"open" | "closed" | null>(null);
+  const [brandFilter, setBrandFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<SortKey>("default");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
+    if (typeof window === "undefined") return "grid";
+    try { return localStorage.getItem("dl-view-mode") === "list" ? "list" : "grid"; } catch { return "grid"; }
+  });
+  const moreRef = useRef<HTMLDivElement>(null);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [liveIndicator, setLiveIndicator] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1490,6 +1558,9 @@ export function DeliverablesView() {
       if (agencyFilter && !matchesAgency(row, agencyFilter)) return false;
       if (collabOnly && !mentionsCollab(row)) return false;
       if (campaignFilter && row.campaignStatus !== campaignFilter) return false;
+      if (brandFilter !== "all" && row.brand !== brandFilter) return false;
+      if (paymentFilter !== "all" && String(row.paymentStep) !== paymentFilter) return false;
+      if (typeFilter !== "all" && !row.deliverables.some((d) => inferType(d.label) === typeFilter)) return false;
       if (q) return (
         row.brand.toLowerCase().includes(q) ||
         row.pnNo.toLowerCase().includes(q) ||
@@ -1499,7 +1570,80 @@ export function DeliverablesView() {
       );
       return true;
     });
-  }, [displayData, filter, month, talent, agencyFilter, collabOnly, campaignFilter, search]);
+  }, [displayData, filter, month, talent, agencyFilter, collabOnly, campaignFilter, brandFilter, paymentFilter, typeFilter, search]);
+
+  const sorted = useMemo(() => {
+    if (sortBy === "default") return filtered;
+    const arr = [...filtered];
+    const statusOrder: Record<DeliverableRow["overallStatus"], number> = { pending: 0, "in-progress": 1, "awaiting-payment": 2, done: 3 };
+    if (sortBy === "golive") {
+      // Upcoming go-lives first (soonest on top), then past ones (most recent first), then undated.
+      const today = new Date().toISOString().slice(0, 10);
+      const rank = (d?: string) => (!d ? 2 : d >= today ? 0 : 1);
+      arr.sort((x, y) => {
+        const rx = rank(x.goLiveDate), ry = rank(y.goLiveDate);
+        if (rx !== ry) return rx - ry;
+        if (rx === 0) return x.goLiveDate!.localeCompare(y.goLiveDate!);
+        if (rx === 1) return y.goLiveDate!.localeCompare(x.goLiveDate!);
+        return 0;
+      });
+    } else if (sortBy === "brand") {
+      arr.sort((x, y) => x.brand.localeCompare(y.brand, undefined, { sensitivity: "base" }));
+    } else if (sortBy === "status") {
+      arr.sort((x, y) => statusOrder[x.overallStatus] - statusOrder[y.overallStatus]);
+    } else if (sortBy === "payment") {
+      arr.sort((x, y) => x.paymentStep - y.paymentStep);
+    }
+    return arr;
+  }, [filtered, sortBy]);
+
+  const brands = useMemo(() => {
+    const seen = new Set<string>();
+    displayData.forEach((d) => { if (d.brand.trim()) seen.add(d.brand.trim()); });
+    return Array.from(seen).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  }, [displayData]);
+
+  const types = useMemo(() => {
+    const seen = new Set<string>();
+    displayData.forEach((d) => d.deliverables.forEach((it) => seen.add(inferType(it.label))));
+    return Object.keys(TYPE_LABELS).filter((t) => seen.has(t));
+  }, [displayData]);
+
+  const moreCount = (typeFilter !== "all" ? 1 : 0) + (campaignFilter ? 1 : 0) + (collabOnly ? 1 : 0) + (showHidden ? 1 : 0);
+
+  const activeChips = useMemo(() => {
+    const chips: { key: string; label: string; clear: () => void }[] = [];
+    if (filter !== "all") chips.push({ key: "status", label: STATUS_CONFIG[filter].label, clear: () => setFilter("all") });
+    if (campaignFilter) chips.push({ key: "campaign", label: campaignFilter === "open" ? "Open" : "Closed", clear: () => setCampaignFilter(null) });
+    if (collabOnly) chips.push({ key: "collab", label: "Collab", clear: () => setCollabOnly(false) });
+    if (brandFilter !== "all") chips.push({ key: "brand", label: `Brand: ${brandFilter}`, clear: () => setBrandFilter("all") });
+    if (talent !== "all") chips.push({ key: "creator", label: `Creator: ${talent}`, clear: () => setTalent("all") });
+    if (month !== "all") chips.push({ key: "month", label: month, clear: () => setMonth("all") });
+    if (paymentFilter !== "all") chips.push({ key: "payment", label: PAYMENT_LABELS[Number(paymentFilter)], clear: () => setPaymentFilter("all") });
+    if (typeFilter !== "all") chips.push({ key: "type", label: TYPE_LABELS[typeFilter] ?? typeFilter, clear: () => setTypeFilter("all") });
+    if (search.trim()) chips.push({ key: "search", label: `“${search.trim()}”`, clear: () => setSearch("") });
+    if (showHidden) chips.push({ key: "hidden", label: "Showing hidden", clear: () => setShowHidden(false) });
+    return chips;
+  }, [filter, campaignFilter, collabOnly, brandFilter, talent, month, paymentFilter, typeFilter, search, showHidden]);
+
+  function clearAllFilters() {
+    setFilter("all"); setCampaignFilter(null); setCollabOnly(false); setBrandFilter("all"); setTalent("all");
+    setMonth("all"); setPaymentFilter("all"); setTypeFilter("all"); setAgencyFilter(""); setSearch(""); setShowHidden(false);
+  }
+
+  useEffect(() => {
+    try { localStorage.setItem("dl-view-mode", viewMode); } catch { /* storage unavailable */ }
+  }, [viewMode]);
+
+  // Close the More filters popover on outside click / Escape
+  useEffect(() => {
+    if (!moreOpen) return;
+    function onDown(e: MouseEvent) { if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false); }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setMoreOpen(false); }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [moreOpen]);
 
   function copyPaymentSummary() {
     const rows = filtered.filter((r) => r.overallStatus === "awaiting-payment");
@@ -1576,170 +1720,251 @@ export function DeliverablesView() {
   }
 
   return (
-    <div className="dl-page" style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+    <div className="dl-page dl-v2" style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
 
       {/* Page header */}
-      <div className="dl-page-header">
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <h2 className="dl-heading">Deliverables</h2>
-            <span className={`dl-live-badge ${liveIndicator ? "flash" : ""}`}>
-              <span className="dl-live-dot" />LIVE
+      <header className="dl2-header">
+        <div className="dl2-header-left">
+          <div className="dl2-title-row">
+            <h2 className="dl2-heading">Deliverables</h2>
+            <span className={`dl2-live ${liveIndicator ? "flash" : ""}`} title="Auto-syncs every 30 seconds">
+              <span className="dl2-live-dot" />Live
             </span>
           </div>
-          <p className="dl-subheading">
-            {loading ? "Syncing from Google Sheets…" : `${filtered.length} of ${displayData.length} deliverables`}
-            {!loading && hiddenIds.length > 0 && (
-              <button
-                className="kanban-btn-secondary"
-                style={{ marginLeft: 10, padding: "2px 8px", fontSize: 11 }}
-                onClick={() => setShowHidden((v) => !v)}
-              >
-                {showHidden ? "Hide hidden" : `Show hidden (${hiddenIds.length})`}
-              </button>
-            )}
-            {lastFetched && !loading && (
-              <span className="dl-last-fetched"> · synced {lastFetched.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+          <p className="dl2-sub">
+            {loading ? "Syncing from Google Sheets…" : (
+              <>
+                <span><strong>{filtered.length}</strong> of {displayData.length} deliverables</span>
+                {lastFetched && <span className="dl2-sub-sep">Synced {lastFetched.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>}
+              </>
             )}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {canEdit && (
-            <button className="dl-new-card-btn" onClick={() => setShowCreate(true)}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              New card
+        <div className="dl2-header-right">
+          {!loading && hiddenIds.length > 0 && (
+            <button type="button" className="dl2-btn dl2-btn-ghost" onClick={() => setShowHidden((v) => !v)} aria-pressed={showHidden}>
+              {showHidden ? "Hide hidden" : `Show hidden (${hiddenIds.length})`}
             </button>
           )}
-          <button className="kanban-btn-secondary dl-refresh-btn" onClick={() => load(false)} disabled={loading || syncing}>
+          <button type="button" className="dl2-btn" onClick={() => load(false)} disabled={loading || syncing}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-              style={{ animation: (loading || syncing) ? "dl-spin 0.8s linear infinite" : "none" }}>
+              className={(loading || syncing) ? "dl2-spin" : undefined} aria-hidden="true">
               <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
-            {syncing ? "Syncing…" : "Refresh"}
+            {syncing ? "Syncing…" : "Sync"}
           </button>
-        </div>
-      </div>
-
-      {/* Agency quick-filter chips */}
-      {!loading && (
-        <div className="dl-agency-chips">
-          {AGENCY_CHIPS.map((agency) => (
-            <button
-              key={agency}
-              className={`dl-agency-chip ${agencyFilter === agency ? "active" : ""}`}
-              onClick={() => setAgencyFilter(agencyFilter === agency ? "" : agency)}
-            >
-              <span className="dl-agency-chip-avatar">
-                {agency.charAt(0).toUpperCase()}
-              </span>
-              <span className="dl-agency-chip-name">{agency}</span>
-              <span className="dl-agency-chip-count">{agencyCounts[agency] ?? 0}</span>
+          {canEdit && (
+            <button type="button" className="dl2-btn dl2-btn-primary" onClick={() => setShowCreate(true)}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              New deliverable
             </button>
-          ))}
+          )}
         </div>
-      )}
+      </header>
 
-      {/* Status strip */}
+      {/* Overview statistics — each one toggles its existing filter */}
       {!loading && displayData.length > 0 && (
-        <div className="dl-stats-strip">
+        <div className="dl2-stats" role="group" aria-label="Filter by status">
           {(Object.entries(STATUS_CONFIG) as [keyof typeof STATUS_CONFIG, typeof STATUS_CONFIG[keyof typeof STATUS_CONFIG]][]).map(([key, cfg]) => (
-            <button key={key}
-              className={`dl-stat-pill ${filter === key ? "active" : ""}`}
+            <button key={key} type="button"
+              className="dl2-stat"
               data-status={key}
+              aria-pressed={filter === key}
               onClick={() => setFilter(filter === key ? "all" : key as FilterTab)}
             >
-              <span className="dl-stat-dot" data-status={key} />
-              {cfg.label}
-              <span className="dl-stat-count">{counts[key]}</span>
+              <span className="dl2-stat-label"><span className="dl2-dot" />{cfg.label}</span>
+              <span className="dl2-stat-count">{counts[key]}</span>
             </button>
           ))}
           {(["open", "closed"] as const).map((k) => (
-            <button key={k}
-              className={`dl-stat-pill dl-stat-pill-campaign ${campaignFilter === k ? "active" : ""}`}
+            <button key={k} type="button"
+              className="dl2-stat"
               data-state={k}
+              aria-pressed={campaignFilter === k}
               onClick={() => setCampaignFilter(campaignFilter === k ? null : k)}
             >
-              <span className="dl-stat-dot" />
-              {k === "open" ? "Open" : "Closed"}
-              <span className="dl-stat-count">{campaignCounts[k]}</span>
+              <span className="dl2-stat-label"><span className="dl2-dot" />{k === "open" ? "Open" : "Closed"}</span>
+              <span className="dl2-stat-count">{campaignCounts[k]}</span>
             </button>
           ))}
           {collabCount > 0 && (
-            <button
-              className={`dl-stat-pill dl-stat-pill-collab ${collabOnly ? "active" : ""}`}
+            <button type="button"
+              className="dl2-stat"
+              data-kind="collab"
+              aria-pressed={collabOnly}
               onClick={() => setCollabOnly((v) => !v)}
             >
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-              Collab
-              <span className="dl-stat-count">{collabCount}</span>
+              <span className="dl2-stat-label"><span className="dl2-dot" />Collab</span>
+              <span className="dl2-stat-count">{collabCount}</span>
             </button>
           )}
         </div>
       )}
 
-      {/* Controls */}
-      <div className="dl-controls">
-        <div className="dl-search-wrap">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {/* Unified toolbar */}
+      <div className="dl2-toolbar">
+        <div className="dl2-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <input ref={searchRef} className="dl-search" placeholder="Search brand, PN, contact… (⌘F)"
+          <input ref={searchRef} type="search" aria-label="Search deliverables" placeholder="Search by brand, POC, contact… (⌘F)"
             value={search} onChange={(e) => setSearch(e.target.value)} />
           {search && (
-            <button className="dl-search-clear" onClick={() => { setSearch(""); searchRef.current?.focus(); }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <button type="button" className="dl2-search-clear" aria-label="Clear search" onClick={() => { setSearch(""); searchRef.current?.focus(); }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           )}
         </div>
-        {search && !loading && <span className="dl-search-count">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</span>}
-        {months.length > 2 && (
-          <select className="dl-month-select" value={month} onChange={(e) => setMonth(e.target.value)}>
-            {months.map((m) => <option key={m} value={m}>{m === "all" ? "All months" : m}</option>)}
-          </select>
-        )}
-        {talents.length > 2 && (
-          <select className="dl-month-select" value={talent} onChange={(e) => setTalent(e.target.value)} title="Filter by creator/talent">
-            {talents.map((t) => <option key={t} value={t}>{t === "all" ? "All creators" : t}</option>)}
-          </select>
-        )}
-        {filter === "awaiting-payment" && counts["awaiting-payment"] > 0 && (
-          <button
-            className={`dl-copy-payment-btn ${copyState === "ok" ? "ok" : ""}`}
-            onClick={copyPaymentSummary}
-            title="Copy payment summary to clipboard"
-          >
-            {copyState === "ok" ? (
-              <>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Copied!
-              </>
-            ) : (
-              <>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-                Copy {counts["awaiting-payment"]} payment{counts["awaiting-payment"] !== 1 ? "s" : ""}
-              </>
+
+        <div className="dl2-controls">
+          <label className="dl2-select">
+            <span className="sr-only">Brand</span>
+            <select value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)}>
+              <option value="all">All brands</option>
+              {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </label>
+          {talents.length > 2 && (
+            <label className="dl2-select">
+              <span className="sr-only">Creator</span>
+              <select value={talent} onChange={(e) => setTalent(e.target.value)}>
+                {talents.map((t) => <option key={t} value={t}>{t === "all" ? "All creators" : t}</option>)}
+              </select>
+            </label>
+          )}
+          {months.length > 2 && (
+            <label className="dl2-select">
+              <span className="sr-only">Month</span>
+              <select value={month} onChange={(e) => setMonth(e.target.value)}>
+                {months.map((m) => <option key={m} value={m}>{m === "all" ? "All months" : m}</option>)}
+              </select>
+            </label>
+          )}
+          <label className="dl2-select">
+            <span className="sr-only">Production status</span>
+            <select value={filter} onChange={(e) => setFilter(e.target.value as FilterTab)}>
+              {FILTER_TABS.map((t) => <option key={t.key} value={t.key}>{t.key === "all" ? "All statuses" : STATUS_CONFIG[t.key as keyof typeof STATUS_CONFIG].label}</option>)}
+            </select>
+          </label>
+          <label className="dl2-select">
+            <span className="sr-only">Payment status</span>
+            <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)}>
+              <option value="all">All payment statuses</option>
+              {PAYMENT_LABELS.map((l, i) => <option key={l} value={String(i)}>{l}</option>)}
+            </select>
+          </label>
+
+          <div className="dl2-more" ref={moreRef}>
+            <button type="button" className="dl2-btn" aria-expanded={moreOpen} aria-haspopup="dialog" onClick={() => setMoreOpen((v) => !v)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+              </svg>
+              More filters
+              {moreCount > 0 && <span className="dl2-badge">{moreCount}</span>}
+            </button>
+            {moreOpen && (
+              <div className="dl2-popover" role="dialog" aria-label="More filters">
+                <label className="dl2-field">
+                  <span>Deliverable type</span>
+                  <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                    <option value="all">All types</option>
+                    {types.map((t) => <option key={t} value={t}>{TYPE_LABELS[t] ?? t}</option>)}
+                  </select>
+                </label>
+                <label className="dl2-field">
+                  <span>Campaign</span>
+                  <select value={campaignFilter ?? ""} onChange={(e) => setCampaignFilter((e.target.value || null) as "open" | "closed" | null)}>
+                    <option value="">Open and closed</option>
+                    <option value="open">Open ({campaignCounts.open})</option>
+                    <option value="closed">Closed ({campaignCounts.closed})</option>
+                  </select>
+                </label>
+                <label className="dl2-toggle">
+                  <input type="checkbox" checked={collabOnly} onChange={(e) => setCollabOnly(e.target.checked)} />
+                  <span>Collab only</span>
+                </label>
+                {hiddenIds.length > 0 && (
+                  <label className="dl2-toggle">
+                    <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />
+                    <span>Show hidden ({hiddenIds.length})</span>
+                  </label>
+                )}
+              </div>
             )}
-          </button>
-        )}
-        <div className="dl-filter-tabs">
-          {FILTER_TABS.map((tab) => (
-            <button key={tab.key} className={`dl-filter-tab ${filter === tab.key ? "active" : ""}`}
-              onClick={() => setFilter(tab.key)}>{tab.label}</button>
+          </div>
+
+          <div className="dl2-view" role="group" aria-label="Layout">
+            <button type="button" aria-label="Grid view" aria-pressed={viewMode === "grid"} onClick={() => setViewMode("grid")}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
+              </svg>
+            </button>
+            <button type="button" aria-label="List view" aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <line x1="9" y1="6" x2="21" y2="6" /><line x1="9" y1="12" x2="21" y2="12" /><line x1="9" y1="18" x2="21" y2="18" />
+                <circle cx="4" cy="6" r="1" /><circle cx="4" cy="12" r="1" /><circle cx="4" cy="18" r="1" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Agency quick filters + active filters + sort */}
+      <div className="dl2-filterbar">
+        <div className="dl2-chips" aria-label="Agency and active filters">
+          {!loading && AGENCY_CHIPS.map((agency) => {
+            const on = agencyFilter === agency;
+            return (
+              <button key={agency} type="button" className="dl2-chip" data-active={on || undefined} aria-pressed={on}
+                onClick={() => setAgencyFilter(on ? "" : agency)}>
+                {agency}
+                <span className="dl2-chip-count">{agencyCounts[agency] ?? 0}</span>
+                {on && (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+          {activeChips.map((c) => (
+            <button key={c.key} type="button" className="dl2-chip" data-active="true" onClick={c.clear} aria-label={`Remove filter ${c.label}`}>
+              {c.label}
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           ))}
+          {(activeChips.length > 0 || agencyFilter) && (
+            <button type="button" className="dl2-chip-clear" onClick={clearAllFilters}>Clear all</button>
+          )}
+        </div>
+        <div className="dl2-filterbar-right">
+          {filter === "awaiting-payment" && counts["awaiting-payment"] > 0 && (
+            <button type="button" className="dl2-btn" data-ok={copyState === "ok" || undefined} onClick={copyPaymentSummary} title="Copy payment summary to clipboard">
+              {copyState === "ok" ? (
+                <><IconCheck size={13} stroke={3} />Copied</>
+              ) : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  Copy {counts["awaiting-payment"]} payment{counts["awaiting-payment"] !== 1 ? "s" : ""}
+                </>
+              )}
+            </button>
+          )}
+          <label className="dl2-select dl2-sort">
+            <span className="dl2-sort-prefix">Sort:</span>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)} aria-label="Sort deliverables">
+              {SORT_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+            </select>
+          </label>
         </div>
       </div>
 
@@ -1784,7 +2009,10 @@ export function DeliverablesView() {
         <div className="dl-empty">
           <div className="dl-empty-icon">📋</div>
           <h3>No deliverables found</h3>
-          <p>{search || filter !== "all" ? "Try adjusting your filters" : "No data in the sheet"}</p>
+          <p>{activeChips.length > 0 || agencyFilter ? "Try adjusting or clearing your filters" : "No data in the sheet"}</p>
+          {(activeChips.length > 0 || agencyFilter) && (
+            <button type="button" className="dl2-btn" style={{ marginTop: 12 }} onClick={clearAllFilters}>Clear all filters</button>
+          )}
           {canEdit && (
             <button className="kanban-btn-primary" style={{ marginTop: 12 }} onClick={() => setShowCreate(true)}>
               + Add your first card
@@ -1794,8 +2022,8 @@ export function DeliverablesView() {
       )}
 
       {!loading && !error && filtered.length > 0 && (
-        <div className="dl-grid">
-          {filtered.map((row) => (
+        <div className="dl2-grid" data-view={viewMode}>
+          {sorted.map((row) => (
             <DeliverableCard
               key={row.id}
               row={row}
