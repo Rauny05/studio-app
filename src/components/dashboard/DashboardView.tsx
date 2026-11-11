@@ -251,7 +251,8 @@ function DeliverablesSummary() {
             <div className="dl-dash-pending">
               {topPending.map((row) => (
                 <Link key={row.id} href="/deliverables" className="dl-dash-row">
-                  <span className="dl-dash-row-pn">{row.pnNo.toUpperCase()}{row.campaignStatus && <span className="dl-campaign-tag" data-state={row.campaignStatus}>{row.campaignStatus}</span>}</span>
+                  <span className="dl-dash-row-pn">{row.pnNo.toUpperCase()}</span>
+                  {row.campaignStatus && <span className="dl-campaign-pill" data-state={row.campaignStatus}>{row.campaignStatus}</span>}
                   <span className="dl-dash-row-brand">{row.brand}</span>
                   <span
                     className="dl-dash-row-status"

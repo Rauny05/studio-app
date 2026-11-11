@@ -9641,18 +9641,22 @@ html[data-theme="light"] .dl-card[data-collab="true"] { border-color: rgba(220, 
 html[data-theme="light"] .dl-card[data-tbts="true"]   { border-color: rgba(120, 100, 220, 0.45); }
 
 
-/* Campaign open/closed tag (sheet "Status" column) */
-.dl-campaign-tag {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: 999px;
+/* Campaign open/closed pill (sheet "Status" column) — separate pill beside the PN badge */
+.dl-campaign-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid transparent;
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  line-height: 1.5;
-  vertical-align: middle;
+  line-height: 1.2;
+  white-space: nowrap;
 }
-.dl-campaign-tag[data-state="open"]   { color: #34d399; background: rgba(52, 211, 153, 0.14); }
-.dl-campaign-tag[data-state="closed"] { color: #9ca3af; background: rgba(156, 163, 175, 0.14); }
+.dl-campaign-pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.dl-campaign-pill[data-state="open"]   { color: #34d399; background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.28); }
+.dl-campaign-pill[data-state="closed"] { color: #9ca3af; background: rgba(156, 163, 175, 0.12); border-color: rgba(156, 163, 175, 0.24); }
+.dl-card-header .dl-campaign-pill { margin-right: auto; } /* hug the PN badge, keep status group right */

@@ -574,9 +574,6 @@ export function DeliverableModal({
             <span className="dl-pn-badge">
               <span className="dl-pn-dot" data-status={local.overallStatus} />
               {local.pnNo.toUpperCase()}
-              {local.campaignStatus && (
-              <span className="dl-campaign-tag" data-state={local.campaignStatus}>{local.campaignStatus}</span>
-            )}
               <button
                 className="dl-pn-copy-btn"
                 onClick={copyPn}
@@ -595,6 +592,9 @@ export function DeliverableModal({
                 )}
               </button>
             </span>
+            {local.campaignStatus && (
+              <span className="dl-campaign-pill" data-state={local.campaignStatus}>{local.campaignStatus}</span>
+            )}
             <span className="dl-status-pill" data-status={local.overallStatus}>
               {status.label}
             </span>
@@ -1181,10 +1181,10 @@ function DeliverableCard({
           <span className="dl-pn-badge">
             <span className="dl-pn-dot" data-status={row.overallStatus} />
             <Highlight text={row.pnNo.toUpperCase()} query={search} />
-            {row.campaignStatus && (
-              <span className="dl-campaign-tag" data-state={row.campaignStatus}>{row.campaignStatus}</span>
-            )}
           </span>
+          {row.campaignStatus && (
+            <span className="dl-campaign-pill" data-state={row.campaignStatus}>{row.campaignStatus}</span>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             {isTbts && <Tag label="TBTS" kind="tbts" />}
             {isLocal && <span className="dl-local-badge" title="Locally created card">Local</span>}
